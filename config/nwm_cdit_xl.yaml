@@ -1,7 +1,7 @@
 run_name: nwm_cdit_xl
 
 # training setup
-results_dir: logs
+results_dir: /data/logs
 train: True
 batch_size: 16
 num_workers: 12
