@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     nano \
     curl \
     wget \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -50,6 +51,7 @@ RUN pip install \
     dreamsim \
     torcheval \
     lpips \
+    opencv-python-headless \
     ipywidgets \
     accelerate
 
