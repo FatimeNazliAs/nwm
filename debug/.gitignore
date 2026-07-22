@@ -1,0 +1,2 @@
+# trace outputs are reproducible from t1_trace.py — don't track the PNGs
+t1_trace_out/

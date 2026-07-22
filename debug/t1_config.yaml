@@ -1,0 +1,11 @@
+# T1 trace knobs. Edit a value, then re-run (no container rebuild):
+#   docker exec nwm_debug bash -lc 'export HOME=/tmp USER=nazli HF_HOME=/data/.cache/huggingface
+#     source /opt/conda/etc/profile.d/conda.sh && conda activate nwm
+#     cd /app && python debug/t1_trace.py'
+#
+# Every run writes to its OWN folder: debug/t1_trace_out/sample<sample>_sec<sec>/
+# so changing these never deletes earlier results.
+
+sample: 42       # which RECON scene to trace.   min 0,  max 499   (the test index has 500 scenes)
+sec: 8           # how many seconds ahead to predict.   min 1,  max 16   (data holds 16 s = 64 frames)
+diff_steps: 100  # denoising steps.   min ~20 (rough/fast),  max 250 (matches real eval, slowest)
