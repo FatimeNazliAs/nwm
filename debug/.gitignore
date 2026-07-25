@@ -1,2 +1,4 @@
-# trace outputs are reproducible from t1_trace.py — don't track the PNGs
+# trace outputs are reproducible from the probe scripts — don't track the PNGs/artifacts
 t1_trace_out/
+t2_trace_out/
+__pycache__/

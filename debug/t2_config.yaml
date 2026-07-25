@@ -1,0 +1,24 @@
+# T2 scene picker — edit this file, then run (inside the nwm_debug container):
+#     cd /app && python debug/t2_probe.py
+# No container rebuild needed.
+#
+# There are TWO ways to choose which RECON scene to inspect.
+
+# --- Option A: pick by row index into the predefined eval index -------------
+# data_splits/recon/test/time.pkl is a list of 500 tuples
+#   (trajectory_folder, curr_time, min_goal, max_goal).
+# `sample` is simply the row number to use.
+sample: 0            # 0..499
+
+# --- Option B: pick a scene directly by trajectory folder name --------------
+# When `trajectory` is set (non-empty) it OVERRIDES `sample`: the tool loads
+# that folder at frame `time` directly, bypassing the 500-row index. `time` is
+# then required (the curr_time / "now" frame index within that trajectory).
+#
+# Validity: needs >= 4 frames before `time` (the context window) and >= 64
+# frames after it (EvalDataset always builds the full 16 s / 64-step horizon).
+#
+#   trajectory: jackal_2019-10-24-15-19-52_9_r00
+#   time: 20
+trajectory:          # leave blank to use `sample` above
+time:                # curr_time / "now" frame index (required if trajectory is set)
