@@ -17,6 +17,7 @@ Two ways to choose a scene (see debug/t2_config.yaml):
   * trajectory: <name> -> load that folder directly at frame `time` (overrides sample)
 Outputs to debug/t2_trace_out/<scene>/ (gitignored).
 """
+import json
 import os
 import sys
 
@@ -228,6 +229,35 @@ def main():
     fig.savefig(viz_path, dpi=120, bbox_inches="tight")
     plt.close(fig)
     print(f"  wrote {viz_path}")
+
+    # ---- 5. machine-readable scene facts (so the webpage can't drift from data) ----
+    pos = np.asarray(traj["position"])
+    yaw = np.asarray(traj["yaw"])
+    facts = {
+        "trajectory": f_curr,
+        "curr_time": int(curr_time),
+        "n_frames": int(n_frames),
+        "context_size": int(ds.context_size),
+        "len_traj_pred": int(ds.len_traj_pred),
+        "input_fps": INPUT_FPS,
+        "context_frames": [int(curr_time - (ds.context_size - 1) + c) for c in range(ds.context_size)],
+        "pred_first": int(curr_time + 1),
+        "pred_last": int(curr_time + ds.len_traj_pred),
+        "position_now": [round(float(pos[curr_time][0]), 4), round(float(pos[curr_time][1]), 4)],
+        "yaw_now": round(float(yaw[curr_time]), 4),
+        "delta1": [round(float(delta[1, 0]), 4), round(float(delta[1, 1]), 4), round(float(delta[1, 2]), 4)],
+        "time_table": [
+            {"sec": int(sec), "steps": int(ts), "rel_t": round(ts / 128.0, 3),
+             "curr_delta": [round(float(delta[:ts, 0].sum()), 2),
+                            round(float(delta[:ts, 1].sum()), 2),
+                            round(float(delta[:ts, 2].sum()), 2)],
+             "target_frame": int(curr_time + ts), "gt_idx": int(ts - 1)}
+            for sec, ts in zip(SECS, TIMESTEPS)
+        ],
+    }
+    with open(os.path.join(out_dir, "scene_facts.json"), "w") as f:
+        json.dump(facts, f, indent=2)
+    print(f"  wrote {out_dir}/scene_facts.json")
     print("\nDONE.")
 
 
