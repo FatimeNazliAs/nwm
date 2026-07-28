@@ -9,19 +9,19 @@ inference pipeline uses (EvalDataset + the time.pkl predefined index), then:
   4. renders an annotated visual: 4 context frames + the 5 target frames the
      "time" eval scores (sec = 1,2,4,8,16 -> frame 4,8,16,32,64).
 
-Pick a scene by editing debug/t2_config.yaml (no rebuild), then run inside the
+Pick a scene by editing debug/t2/config.yaml (no rebuild), then run inside the
 nwm_debug container:
-    cd /app && python debug/t2_probe.py
-Two ways to choose a scene (see debug/t2_config.yaml):
+    cd /app && python debug/t2/probe.py
+Two ways to choose a scene (see debug/t2/config.yaml):
   * sample: N          -> row N of the predefined index data_splits/recon/test/time.pkl
   * trajectory: <name> -> load that folder directly at frame `time` (overrides sample)
-Outputs to debug/t2_trace_out/<scene>/ (gitignored).
+Outputs to debug/out/t2/<scene>/ (gitignored).
 """
 import json
 import os
 import sys
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, ROOT)   # repo root, so `import misc` / `datasets` resolve
 os.chdir(ROOT)             # so config/, data_splits/, outputs resolve from repo root
 
@@ -30,8 +30,13 @@ import torch
 import yaml
 import matplotlib.pyplot as plt
 
+from debug.common.report import hr, show
+from debug.common.scene import (
+    build_recon_eval_dataset,
+    resolve_scene,
+)
+
 import misc
-from datasets import EvalDataset
 
 # ---- eval "time" path constants (see isolated_nwm_infer.py) ----
 INPUT_FPS = 4                       # recon is 4 fps
@@ -39,99 +44,8 @@ SECS = [1, 2, 4, 8, 16]             # 2**i for i in range(num_sec_eval=5)
 TIMESTEPS = [s * INPUT_FPS for s in SECS]   # [4, 8, 16, 32, 64]
 
 
-def build_recon_eval_dataset(config):
-    """Mirror isolated_nwm_infer.get_dataset_eval for recon / time.pkl."""
-    dc = config["eval_datasets"]["recon"]
-    return EvalDataset(
-        data_folder=dc["data_folder"],
-        data_split_folder=dc["test"],
-        dataset_name="recon",
-        image_size=config["image_size"],
-        min_dist_cat=config["eval_distance"]["eval_min_dist_cat"],
-        max_dist_cat=config["eval_distance"]["eval_max_dist_cat"],
-        len_traj_pred=config["eval_len_traj_pred"],
-        traj_stride=config["traj_stride"],
-        context_size=config["eval_context_size"],
-        normalize=config["normalize"],
-        transform=misc.transform,
-        goals_per_obs=4,
-        predefined_index="data_splits/recon/test/time.pkl",
-        traj_names="traj_names.txt",
-    )
-
-
-def hr(title):
-    print("\n" + "=" * 70)
-    print(title)
-    print("=" * 70)
-
-
-def show(name, t):
-    if torch.is_tensor(t):
-        print(f"  {name:<14} shape={tuple(t.shape)!s:<22} dtype={str(t.dtype):<15} "
-              f"min={t.min().item():+.3f} max={t.max().item():+.3f}")
-    else:
-        print(f"  {name:<14} {t}")
-
-
-def resolve_scene(ds, cfg):
-    """
-    Decide which RECON scene to load from debug/t2_config.yaml.
-
-    Returns (row, f_curr, curr_time, scene_tag, mode) where `row` is the index
-    to pass to EvalDataset.__getitem__ so the *real* dataset code still does all
-    the image loading / action processing.
-
-    Two modes:
-      * trajectory mode (cfg['trajectory'] set): load that folder at cfg['time']
-        directly, bypassing the 500-row time.pkl index. EvalDataset can index any
-        folder listed in traj_names.txt (predefined_index=None builds exactly such
-        an index); here we validate the folder + frame ourselves and splice a
-        single synthetic row into ds.index_to_data, so __getitem__ is untouched.
-      * sample mode (otherwise): use row cfg['sample'] of the time.pkl index
-        (the original behavior).
-    """
-    traj = cfg.get("trajectory")
-    if traj:  # ------------------------------------------------ trajectory mode
-        t = cfg.get("time")
-        if t is None:
-            raise SystemExit("t2_config: `trajectory` is set but `time` is missing.\n"
-                             "  Add `time: <frame>` (the curr_time / 'now' frame index).")
-        t = int(t)
-        traj = str(traj)
-        folder = os.path.join(ds.data_folder, traj)
-        if not os.path.isfile(os.path.join(folder, "traj_data.pkl")):
-            raise SystemExit(f"t2_config: trajectory folder not found (no traj_data.pkl):\n"
-                             f"    {folder}\n"
-                             f"  Check the name against data_splits/recon/test/traj_names.txt.")
-        traj_data = ds._get_trajectory(traj)
-        n = len(traj_data["position"])
-        need_before = ds.context_size - 1      # frames t-3..t must exist  -> t >= 3
-        need_after = ds.len_traj_pred          # EvalDataset always builds the full 64-step horizon
-        if t < need_before:
-            raise SystemExit(f"t2_config: time={t} too small for '{traj}'.\n"
-                             f"  Need {ds.context_size} context frames ending at t "
-                             f"(frames {t - need_before}..{t}); earliest valid time is {need_before}.")
-        if t + need_after > n - 1:
-            raise SystemExit(f"t2_config: time={t} too large for '{traj}' ({n} frames).\n"
-                             f"  Need {need_after} future frames after t (up to frame {t + need_after}); "
-                             f"latest valid time is {n - 1 - need_after}.")
-        in_split = traj in ds.traj_names
-        note = "in test split" if in_split else "NOT in test traj_names.txt (loading from disk anyway)"
-        # __getitem__ only reads (f_curr, curr_time) from the tuple; min/max are ignored.
-        ds.index_to_data = [(traj, t, 0, 0)]
-        return 0, traj, t, f"{traj}__t{t}", f"trajectory ({note})"
-
-    # ---------------------------------------------------------------- sample mode
-    sample = int(cfg.get("sample", 0) or 0)
-    if not (0 <= sample < len(ds)):
-        raise SystemExit(f"t2_config: sample={sample} out of range 0..{len(ds) - 1}.")
-    f_curr, curr_time, _, _ = ds.index_to_data[sample]
-    return sample, f_curr, int(curr_time), f"sample{sample}", "sample (row of time.pkl)"
-
-
 def main():
-    cfg = yaml.safe_load(open("debug/t2_config.yaml")) if os.path.exists("debug/t2_config.yaml") else {}
+    cfg = yaml.safe_load(open("debug/t2/config.yaml")) if os.path.exists("debug/t2/config.yaml") else {}
     cfg = cfg or {}
 
     with open("config/eval_config.yaml") as f:
@@ -142,9 +56,9 @@ def main():
     ds = build_recon_eval_dataset(base)
     n_predef = len(ds)   # size of the predefined time.pkl index (before any override)
 
-    row, f_curr, curr_time, scene_tag, mode = resolve_scene(ds, cfg)
+    row, f_curr, curr_time, scene_tag, mode = resolve_scene(ds, cfg, "debug/t2/config.yaml")
 
-    hr("SCENE SELECTED  (from debug/t2_config.yaml)")
+    hr("SCENE SELECTED  (from debug/t2/config.yaml)")
     print(f"  mode         : {mode}")
     print(f"  trajectory   : {f_curr}")
     print(f"  curr_time    : frame {curr_time}   ('now')")
@@ -187,8 +101,8 @@ def main():
     print("     action magnitude AND as the rel_t embedding (timestep/128).")
 
     # ---- 4. visual ----
-    hr("4) VISUAL  ->  debug/t2_trace_out")
-    out_dir = f"debug/t2_trace_out/{scene_tag}"
+    hr("4) VISUAL  ->  debug/out/t2")
+    out_dir = f"debug/out/t2/{scene_tag}"
     os.makedirs(out_dir, exist_ok=True)
 
     # undo the [-1,1] normalization for viewing

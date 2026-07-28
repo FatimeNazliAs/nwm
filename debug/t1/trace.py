@@ -2,7 +2,7 @@
 # the shape/range at each boundary + saving images. Lives in debug/ but must run
 # as if from the repo root, so anchor sys.path + cwd there before importing repo modules.
 import os, sys
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))  # repo root
 sys.path.insert(0, ROOT)
 os.chdir(ROOT)  # so config/, data_splits/, and outputs resolve from the repo root
 
@@ -15,14 +15,14 @@ from isolated_nwm_infer import get_dataset_eval, save_image
 
 DEVICE = 'cuda'
 
-# --- knobs: read from debug/t1_config.yaml (edit that file, no container rebuild) ---
-_cfg = yaml.safe_load(open('debug/t1_config.yaml')) if os.path.exists('debug/t1_config.yaml') else {}
+# --- knobs: read from debug/t1/config.yaml (edit that file, no container rebuild) ---
+_cfg = yaml.safe_load(open('debug/t1/config.yaml')) if os.path.exists('debug/t1/config.yaml') else {}
 SAMPLE     = int(_cfg.get('sample', 0))       # which RECON scene (0..499)
 SEC        = int(_cfg.get('sec', 1))          # horizon in seconds (1..16)
 DIFF_STEPS = int(_cfg.get('diff_steps', 100)) # denoising steps (real eval = 250)
 
 # each run gets its OWN folder, so changing sample/sec never overwrites earlier results
-OUT = f'debug/t1_trace_out/sample{SAMPLE}_sec{SEC}'; os.makedirs(OUT, exist_ok=True)
+OUT = f'debug/out/t1/sample{SAMPLE}_sec{SEC}'; os.makedirs(OUT, exist_ok=True)
 print(f"[config] sample={SAMPLE}  sec={SEC}  diff_steps={DIFF_STEPS}  ->  {OUT}/")
 
 def banner(n, txt): print(f"\n{'='*70}\n[{n}] {txt}\n{'='*70}")
