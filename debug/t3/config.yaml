@@ -1,10 +1,10 @@
 # T3 scene picker — edit this file, then run (inside the nwm_debug container):
-#     cd /app && python debug/t3_probe.py
+#     cd /app && python debug/t3/probe.py && python debug/t3/build_page.py
 # No container rebuild needed.
 #
-# Scene selection is IDENTICAL to T2 (this file is read by the same resolver,
-# debug/t2_probe.resolve_scene), so the two probes can be pointed at the same
-# scene and their outputs compared frame-for-frame.
+# Scene selection is IDENTICAL to T2 (both read the same resolver,
+# debug/common/scene.py), so the two probes can be pointed at the same scene
+# and their outputs compared frame-for-frame.
 
 # --- Option A: pick by row index into the predefined eval index -------------
 # data_splits/recon/test/time.pkl is a list of 500 tuples
@@ -17,10 +17,12 @@ sample: 0            # 0..499
 #
 #   trajectory: jackal_2019-08-02-16-28-30_5_r01
 #   time: 6
-trajectory: jackal_2019-08-02-16-28-30_5_r01   # leave blank to use `sample` above
-time: 6                                        # curr_time / "now" frame index (required if trajectory is set)
+trajectory: jackal_2019-08-02-17-18-37_42_r00     # leave blank to use `sample` above
+time: 43                                       # curr_time / "now" frame index (required if trajectory is set)
 
 # --- T3-only: which single frame gets encoded/decoded -----------------------
 # "now"  -> obs_image[-1], the last context frame (what the model conditions on)
 # 0..3   -> that context frame (0 = oldest, 3 = "now" when context_size=4)
 frame: now
+
+

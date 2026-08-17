@@ -12,8 +12,8 @@ and then reports, with real numbers:
   2. the pixel tensor going in (shape / range / element count),
   3. the encode: latent_dist (a Gaussian per cell), the sample, the 0.18215
      rescale -- and why that constant exists,
-  4. the compression budget: pixels vs latents vs CDiT tokens (the "why latent
-     diffusion is cheaper" number),
+  4. how much smaller the latent is (what that saves inside CDiT is T4's to
+     measure, not T3's),
   5. the decode: reconstruction + per-pixel error (MSE / PSNR / worst pixel),
   6. a visual: original | reconstruction | amplified error, plus the 4 latent
      channels rendered as 28x28 images,
@@ -46,7 +46,9 @@ from debug.common.scene import build_recon_eval_dataset, resolve_scene
 VAE_NAME = "stabilityai/sd-vae-ft-ema"
 SCALING = 0.18215          # SD latent scaling constant, hardcoded at lines 79/87
 IMAGE_SIZE = 224
-PATCH_SIZE = 2             # CDiT-XL/2 patchifies the latent 2x2 (models.py:306)
+PATCH_SIZE = 2             # CDiT-XL/2 patchifies the latent 2x2 (models.py:306);
+                           # used only to explain how the 4 latents are combined (T4 owns the cost)
+DIFFUSION_STEPS = 250      # create_diffusion(str(250)) in the real eval
 
 
 def pick_frame(obs_image, cfg, context_size):
@@ -204,23 +206,18 @@ def main():
     print(f"  noise schedule assumes unit-variance data. {SCALING:.5f} ~= 1/{1/SCALING:.2f} rescales")
     print(f"  them to std ~= {z.std().item():.3f}. Decode divides it straight back out.")
 
-    # ---- 4. the compression budget ----
-    hr("4) WHY LATENT DIFFUSION IS CHEAPER  (real numbers for this frame)")
+    # ---- 4. how much smaller ----
+    # Only the size change belongs to T3. How much that saves inside CDiT is
+    # measured in T4, where patches and attention are actually introduced --
+    # keeping it here would give two stages the same claim to disagree about.
+    hr("4) HOW MUCH SMALLER  (real numbers for this frame)")
     lat_c, lat_h, lat_w = z.shape[1], z.shape[2], z.shape[3]
     n_lat = lat_c * lat_h * lat_w
-    tok_lat = (lat_h // PATCH_SIZE) * (lat_w // PATCH_SIZE)
-    tok_pix = (IMAGE_SIZE // PATCH_SIZE) * (IMAGE_SIZE // PATCH_SIZE)
     print(f"  pixel tensor  (3, {IMAGE_SIZE}, {IMAGE_SIZE})  = {n_pix:,} numbers")
     print(f"  latent tensor ({lat_c}, {lat_h}, {lat_w})    = {n_lat:,} numbers")
-    print(f"  -> {n_pix / n_lat:.1f}x fewer numbers to denoise, {IMAGE_SIZE // lat_h}x smaller per side")
-    print()
-    print(f"  CDiT-XL/2 patchifies {PATCH_SIZE}x{PATCH_SIZE}:")
-    print(f"    on the latent : {lat_h}/{PATCH_SIZE} x {lat_w}/{PATCH_SIZE} = {tok_lat} tokens")
-    print(f"    on raw pixels : {IMAGE_SIZE}/{PATCH_SIZE} x {IMAGE_SIZE}/{PATCH_SIZE} = {tok_pix:,} tokens")
-    print(f"  self-attention is O(tokens^2): ({tok_pix}/{tok_lat})^2 = "
-          f"{(tok_pix / tok_lat) ** 2:,.0f}x more attention work on pixels.")
-    print(f"  And this cost is paid ONCE PER DENOISING STEP -- the eval runs 250 steps")
-    print(f"  (create_diffusion(str(250))), so it multiplies by 250.")
+    print(f"  -> {n_pix / n_lat:.1f}x fewer numbers, {IMAGE_SIZE // lat_h}x smaller per side")
+    print(f"  The model that consumes this runs {DIFFUSION_STEPS} times per predicted frame,")
+    print(f"  while encode and decode run once each -- see T4 for what that saves.")
 
     # ---- 5. decode ----
     hr("5) DECODE  ->  vae.decode(z / 0.18215).sample, then clip to [-1, 1]")
@@ -301,12 +298,7 @@ def main():
             f"latent   ({lat_c}, {lat_h}, {lat_w})\n"
             f"           = {n_lat:,} numbers\n\n"
             f"   {n_pix / n_lat:.0f}x fewer values\n"
-            f"   {IMAGE_SIZE // lat_h}x smaller per side\n\n"
-            f"CDiT tokens (patch {PATCH_SIZE}x{PATCH_SIZE}):\n"
-            f"   latent : {tok_lat}\n"
-            f"   pixels : {tok_pix:,}\n"
-            f"   attention: {(tok_pix / tok_lat) ** 2:,.0f}x cheaper\n"
-            f"   x 250 denoising steps",
+            f"   {IMAGE_SIZE // lat_h}x smaller per side",
             va="top", ha="left", fontsize=11, family="monospace",
             transform=ax.transAxes)
 
@@ -382,11 +374,7 @@ def main():
         "sample_minus_mean_max": round(float((z_raw - mean).abs().max()), 4),
         "compression_ratio": round(n_pix / n_lat, 1),
         "spatial_downsample": IMAGE_SIZE // lat_h,
-        "patch_size": PATCH_SIZE,
-        "tokens_latent": int(tok_lat),
-        "tokens_pixel": int(tok_pix),
-        "attention_ratio": round((tok_pix / tok_lat) ** 2, 0),
-        "diffusion_steps": 250,
+        "diffusion_steps": DIFFUSION_STEPS,
         "mse": round(mse, 6),
         "psnr_db": round(float(psnr), 2),
         "mean_abs_err": round(float(err.mean()), 5),
