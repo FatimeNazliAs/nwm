@@ -144,6 +144,42 @@ def main():
     plt.close(fig)
     print(f"  wrote {viz_path}")
 
+    # ---- 4b. per-frame images + the action before/after, big, for the webpage ----
+    def _save_img(chw, path):
+        plt.imsave(path, chw.permute(1, 2, 0).clamp(0, 1).numpy())
+
+    for c in range(ds.context_size):
+        _save_img(obs_v[c], os.path.join(out_dir, f"ctx_f{c}.png"))
+    for sec, ts in zip(SECS, TIMESTEPS):
+        _save_img(pred_v[ts - 1], os.path.join(out_dir, f"tgt_{sec}s.png"))
+
+    # the action = rewriting the future path from world coords into the robot's
+    # own frame at "now". Show both sides so the transform is visible.
+    posf = np.asarray(traj["position"])[curr_time:curr_time + ds.len_traj_pred + 1]
+    yaw0 = float(np.asarray(traj["yaw"])[curr_time])
+    loc = misc.to_local_coords(posf, posf[0], yaw0)
+    figt, (axw, axl) = plt.subplots(1, 2, figsize=(9.2, 4.4))
+    axw.plot(posf[:, 0], posf[:, 1], "-o", ms=3, color="#5c6a76", zorder=1)
+    axw.plot(posf[0, 0], posf[0, 1], "*", ms=17, color="#0f8f8b", zorder=3)
+    axw.annotate("", xy=(posf[0, 0] + np.cos(yaw0), posf[0, 1] + np.sin(yaw0)),
+                 xytext=(posf[0, 0], posf[0, 1]),
+                 arrowprops=dict(arrowstyle="-|>", color="#b06d13", lw=2.2))
+    axw.set_title("BEFORE — world map\n(raw position + yaw)", fontsize=11)
+    axw.set_xlabel("world x (m)"); axw.set_ylabel("world y (m)")
+    axw.axis("equal"); axw.grid(alpha=.3)
+    fwd = max(1.0, float(loc[:, 0].max()) * 0.35)
+    axl.plot(loc[:, 0], loc[:, 1], "-o", ms=3, color="#0f8f8b", zorder=1)
+    axl.plot(0, 0, "*", ms=17, color="#0f8f8b", zorder=3)
+    axl.annotate("", xy=(fwd, 0), xytext=(0, 0),
+                 arrowprops=dict(arrowstyle="-|>", color="#b06d13", lw=2.2))
+    axl.set_title("AFTER — robot's view at 'now'\n(local frame: +x = forward = dx)", fontsize=11)
+    axl.set_xlabel("dx  forward (m)"); axl.set_ylabel("dy  sideways (m)")
+    axl.axis("equal"); axl.grid(alpha=.3)
+    figt.tight_layout()
+    figt.savefig(os.path.join(out_dir, "action_transform.png"), dpi=120, bbox_inches="tight")
+    plt.close(figt)
+    print(f"  wrote {out_dir}/action_transform.png")
+
     # ---- 5. machine-readable scene facts (so the webpage can't drift from data) ----
     pos = np.asarray(traj["position"])
     yaw = np.asarray(traj["yaw"])
