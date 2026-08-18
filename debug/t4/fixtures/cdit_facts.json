@@ -1,0 +1,1047 @@
+{
+  "_schema_version": 1,
+  "_stage": "t4",
+  "trajectory": "jackal_2019-08-02-16-28-30_5_r01",
+  "curr_time": 6,
+  "context_size": 4,
+  "context_frame_numbers": [
+    3,
+    4,
+    5,
+    6
+  ],
+  "sec": 10,
+  "input_fps": 4,
+  "ts": 40,
+  "target_frame_number": 46,
+  "model": "CDiT-XL/2",
+  "model_class": "CDiT",
+  "checkpoint": "0100000",
+  "checkpoint_key": "ema",
+  "train_step": 100000,
+  "trained_by_nwm": true,
+  "params_total_m": 1012.0,
+  "depth": 28,
+  "hidden": 1152,
+  "num_heads": 16,
+  "patch_size": 2,
+  "latent_size": 28,
+  "in_channels": 4,
+  "out_channels": 8,
+  "learn_sigma": true,
+  "param_groups_m": {
+    "x_embedder (patchify)": 0.0,
+    "t_embedder (diffusion step)": 1.6,
+    "y_embedder (action)": 0.7,
+    "time_embedder (how far ahead)": 1.6,
+    "final_layer": 2.7,
+    "pos_embed (learned)": 1.1
+  },
+  "params_blocks_m": 1004.1,
+  "params_per_block_m": {
+    "self-attention": 5.31,
+    "cross-attention": 5.32,
+    "feed-forward (MLP)": 10.62,
+    "adaLN conditioning": 14.61
+  },
+  "adaln_out_dim": 12672,
+  "grid": 14,
+  "tokens_per_frame": 196,
+  "context_tokens": 784,
+  "numbers_per_patch": 16,
+  "patch_expansion": 72.0,
+  "pos_embed_shape": [
+    5,
+    196,
+    1152
+  ],
+  "pos_embed_learned": true,
+  "pos_embed_slot_sim": [
+    [
+      1.0,
+      0.643,
+      0.562,
+      0.501,
+      0.011
+    ],
+    [
+      0.643,
+      1.0,
+      0.668,
+      0.511,
+      0.013
+    ],
+    [
+      0.562,
+      0.668,
+      1.0,
+      0.624,
+      0.014
+    ],
+    [
+      0.501,
+      0.511,
+      0.624,
+      1.0,
+      0.011
+    ],
+    [
+      0.011,
+      0.013,
+      0.014,
+      0.011,
+      1.0
+    ]
+  ],
+  "pos_embed_slot_sim_offdiag_mean": 0.356,
+  "diffusion_t": 999,
+  "diffusion_steps": 1000,
+  "respaced_steps": 250,
+  "action": [
+    5.9155,
+    -2.5192,
+    -0.6882
+  ],
+  "rel_t": 0.3125,
+  "cond_norms": {
+    "t_embedder": 8.79,
+    "time_embedder": 47.42,
+    "y_embedder": 21.97,
+    "c": 69.11
+  },
+  "action_emb_split": [
+    384,
+    384,
+    384
+  ],
+  "adaln_signals": [
+    {
+      "name": "shift_msa",
+      "what": "self-attention: shift",
+      "mean": -0.0022,
+      "std": 0.1065
+    },
+    {
+      "name": "scale_msa",
+      "what": "self-attention: scale",
+      "mean": -0.6197,
+      "std": 0.4079
+    },
+    {
+      "name": "gate_msa",
+      "what": "self-attention: how much of it to keep",
+      "mean": 0.0027,
+      "std": 0.0992
+    },
+    {
+      "name": "shift_ca_xcond",
+      "what": "cross-attention, the CONTEXT side: shift",
+      "mean": 0.0021,
+      "std": 0.1603
+    },
+    {
+      "name": "scale_ca_xcond",
+      "what": "cross-attention, the CONTEXT side: scale",
+      "mean": -0.7116,
+      "std": 0.3538
+    },
+    {
+      "name": "shift_ca_x",
+      "what": "cross-attention, the QUERY side: shift",
+      "mean": 0.0167,
+      "std": 0.193
+    },
+    {
+      "name": "scale_ca_x",
+      "what": "cross-attention, the QUERY side: scale",
+      "mean": -0.2111,
+      "std": 0.6661
+    },
+    {
+      "name": "gate_ca_x",
+      "what": "cross-attention: how much of it to keep",
+      "mean": 0.0003,
+      "std": 0.2252
+    },
+    {
+      "name": "shift_mlp",
+      "what": "feed-forward: shift",
+      "mean": 0.0057,
+      "std": 0.1232
+    },
+    {
+      "name": "scale_mlp",
+      "what": "feed-forward: scale",
+      "mean": -0.4358,
+      "std": 0.5036
+    },
+    {
+      "name": "gate_mlp",
+      "what": "feed-forward: how much of it to keep",
+      "mean": -0.0042,
+      "std": 0.2367
+    }
+  ],
+  "block_traced": 0,
+  "block_trace": [
+    {
+      "layer": "adaLN_modulation",
+      "in": [
+        1,
+        1152
+      ],
+      "out": [
+        1,
+        12672
+      ]
+    },
+    {
+      "layer": "norm1",
+      "in": [
+        1,
+        196,
+        1152
+      ],
+      "out": [
+        1,
+        196,
+        1152
+      ]
+    },
+    {
+      "layer": "attn (self)",
+      "in": [
+        1,
+        196,
+        1152
+      ],
+      "out": [
+        1,
+        196,
+        1152
+      ]
+    },
+    {
+      "layer": "norm_cond",
+      "in": [
+        1,
+        784,
+        1152
+      ],
+      "out": [
+        1,
+        784,
+        1152
+      ]
+    },
+    {
+      "layer": "norm2",
+      "in": [
+        1,
+        196,
+        1152
+      ],
+      "out": [
+        1,
+        196,
+        1152
+      ]
+    },
+    {
+      "layer": "cttn (cross)",
+      "in": null,
+      "out": [
+        1,
+        196,
+        1152
+      ]
+    },
+    {
+      "layer": "norm3",
+      "in": [
+        1,
+        196,
+        1152
+      ],
+      "out": [
+        1,
+        196,
+        1152
+      ]
+    },
+    {
+      "layer": "mlp",
+      "in": [
+        1,
+        196,
+        1152
+      ],
+      "out": [
+        1,
+        196,
+        1152
+      ]
+    },
+    {
+      "layer": "final_layer",
+      "in": [
+        1,
+        196,
+        1152
+      ],
+      "out": [
+        1,
+        196,
+        32
+      ]
+    }
+  ],
+  "gates": {
+    "gate_msa": [
+      0.046,
+      0.195,
+      0.1975,
+      0.218,
+      0.2306,
+      0.2804,
+      0.2648,
+      0.471,
+      0.4461,
+      0.47,
+      0.4713,
+      0.47,
+      0.4427,
+      0.486,
+      0.4868,
+      0.4476,
+      0.495,
+      0.5036,
+      0.4881,
+      0.6783,
+      0.7423,
+      0.5592,
+      0.7674,
+      0.6018,
+      0.7793,
+      0.583,
+      0.3826,
+      0.0648
+    ],
+    "gate_ca_x": [
+      0.1216,
+      0.1586,
+      0.1593,
+      0.2007,
+      0.218,
+      0.2375,
+      0.2599,
+      0.1919,
+      0.2939,
+      0.283,
+      0.2302,
+      0.2473,
+      0.2605,
+      0.2747,
+      0.2698,
+      0.2587,
+      0.2756,
+      0.2658,
+      0.2505,
+      0.2782,
+      0.3711,
+      0.23,
+      0.2713,
+      0.239,
+      0.247,
+      0.1417,
+      0.0647,
+      0.0195
+    ],
+    "gate_mlp": [
+      0.136,
+      0.2372,
+      0.3149,
+      0.3576,
+      0.4387,
+      0.5176,
+      0.5755,
+      0.803,
+      0.8529,
+      0.8987,
+      0.9286,
+      0.9843,
+      0.9873,
+      0.9883,
+      0.9965,
+      0.9823,
+      0.9669,
+      0.9852,
+      0.9258,
+      0.928,
+      1.285,
+      1.2557,
+      1.536,
+      1.3536,
+      1.1909,
+      0.8729,
+      0.6199,
+      0.2197
+    ]
+  },
+  "query_patch": {
+    "index": 105,
+    "row": 7,
+    "col": 7
+  },
+  "attn_block": 0,
+  "attn_block_why": "auto: the most focused of the 28, on input (b)",
+  "attn_step": 25,
+  "attn_t": 100,
+  "attention_by_depth": [
+    {
+      "block": 0,
+      "focus": 0.0842,
+      "sink": 0.0007,
+      "per_frame": [
+        0.2531,
+        0.2213,
+        0.2302,
+        0.2947
+      ]
+    },
+    {
+      "block": 1,
+      "focus": 0.0784,
+      "sink": 0.0427,
+      "per_frame": [
+        0.2243,
+        0.203,
+        0.226,
+        0.304
+      ]
+    },
+    {
+      "block": 2,
+      "focus": 0.061,
+      "sink": 0.0006,
+      "per_frame": [
+        0.2481,
+        0.2352,
+        0.2476,
+        0.2685
+      ]
+    },
+    {
+      "block": 3,
+      "focus": 0.0401,
+      "sink": 0.0009,
+      "per_frame": [
+        0.2477,
+        0.2423,
+        0.2479,
+        0.2611
+      ]
+    },
+    {
+      "block": 4,
+      "focus": 0.0546,
+      "sink": 0.0009,
+      "per_frame": [
+        0.2533,
+        0.2451,
+        0.2466,
+        0.2541
+      ]
+    },
+    {
+      "block": 5,
+      "focus": 0.0519,
+      "sink": 0.0008,
+      "per_frame": [
+        0.2435,
+        0.242,
+        0.2469,
+        0.2669
+      ]
+    },
+    {
+      "block": 6,
+      "focus": 0.0424,
+      "sink": 0.0009,
+      "per_frame": [
+        0.2488,
+        0.2445,
+        0.243,
+        0.2629
+      ]
+    },
+    {
+      "block": 7,
+      "focus": 0.0276,
+      "sink": 0.0011,
+      "per_frame": [
+        0.2496,
+        0.2437,
+        0.2465,
+        0.259
+      ]
+    },
+    {
+      "block": 8,
+      "focus": 0.022,
+      "sink": 0.0011,
+      "per_frame": [
+        0.247,
+        0.2504,
+        0.2493,
+        0.2522
+      ]
+    },
+    {
+      "block": 9,
+      "focus": 0.0244,
+      "sink": 0.001,
+      "per_frame": [
+        0.2484,
+        0.2458,
+        0.2475,
+        0.2571
+      ]
+    },
+    {
+      "block": 10,
+      "focus": 0.0271,
+      "sink": 0.001,
+      "per_frame": [
+        0.2496,
+        0.2466,
+        0.2467,
+        0.2562
+      ]
+    },
+    {
+      "block": 11,
+      "focus": 0.0311,
+      "sink": 0.0009,
+      "per_frame": [
+        0.2468,
+        0.2432,
+        0.2467,
+        0.2624
+      ]
+    },
+    {
+      "block": 12,
+      "focus": 0.0254,
+      "sink": 0.001,
+      "per_frame": [
+        0.2479,
+        0.2466,
+        0.249,
+        0.2554
+      ]
+    },
+    {
+      "block": 13,
+      "focus": 0.0245,
+      "sink": 0.001,
+      "per_frame": [
+        0.2502,
+        0.2479,
+        0.2477,
+        0.2532
+      ]
+    },
+    {
+      "block": 14,
+      "focus": 0.0276,
+      "sink": 0.001,
+      "per_frame": [
+        0.2513,
+        0.2476,
+        0.2471,
+        0.253
+      ]
+    },
+    {
+      "block": 15,
+      "focus": 0.0262,
+      "sink": 0.001,
+      "per_frame": [
+        0.2515,
+        0.2479,
+        0.2462,
+        0.2534
+      ]
+    },
+    {
+      "block": 16,
+      "focus": 0.0234,
+      "sink": 0.001,
+      "per_frame": [
+        0.2498,
+        0.2484,
+        0.2485,
+        0.2523
+      ]
+    },
+    {
+      "block": 17,
+      "focus": 0.0258,
+      "sink": 0.001,
+      "per_frame": [
+        0.2513,
+        0.249,
+        0.2489,
+        0.2498
+      ]
+    },
+    {
+      "block": 18,
+      "focus": 0.0277,
+      "sink": 0.001,
+      "per_frame": [
+        0.2512,
+        0.2493,
+        0.2475,
+        0.2511
+      ]
+    },
+    {
+      "block": 19,
+      "focus": 0.0239,
+      "sink": 0.001,
+      "per_frame": [
+        0.2526,
+        0.2482,
+        0.2473,
+        0.2509
+      ]
+    },
+    {
+      "block": 20,
+      "focus": 0.0232,
+      "sink": 0.001,
+      "per_frame": [
+        0.2606,
+        0.2469,
+        0.2443,
+        0.2473
+      ]
+    },
+    {
+      "block": 21,
+      "focus": 0.0266,
+      "sink": 0.0009,
+      "per_frame": [
+        0.2532,
+        0.249,
+        0.2472,
+        0.2497
+      ]
+    },
+    {
+      "block": 22,
+      "focus": 0.0291,
+      "sink": 0.0009,
+      "per_frame": [
+        0.2539,
+        0.2431,
+        0.246,
+        0.2562
+      ]
+    },
+    {
+      "block": 23,
+      "focus": 0.0261,
+      "sink": 0.0009,
+      "per_frame": [
+        0.2535,
+        0.2441,
+        0.2456,
+        0.2558
+      ]
+    },
+    {
+      "block": 24,
+      "focus": 0.0255,
+      "sink": 0.0009,
+      "per_frame": [
+        0.251,
+        0.2457,
+        0.2466,
+        0.2557
+      ]
+    },
+    {
+      "block": 25,
+      "focus": 0.0333,
+      "sink": 0.0008,
+      "per_frame": [
+        0.2486,
+        0.2439,
+        0.2452,
+        0.2615
+      ]
+    },
+    {
+      "block": 26,
+      "focus": 0.0463,
+      "sink": 0.0009,
+      "per_frame": [
+        0.2595,
+        0.2355,
+        0.2368,
+        0.2674
+      ]
+    },
+    {
+      "block": 27,
+      "focus": 0.0284,
+      "sink": 0.001,
+      "per_frame": [
+        0.2574,
+        0.2411,
+        0.2425,
+        0.2581
+      ]
+    }
+  ],
+  "attention_by_depth_pure_noise": [
+    {
+      "block": 0,
+      "focus": 0.0634,
+      "sink": 0.0008
+    },
+    {
+      "block": 1,
+      "focus": 0.1019,
+      "sink": 0.0145
+    },
+    {
+      "block": 2,
+      "focus": 0.0779,
+      "sink": 0.0004
+    },
+    {
+      "block": 3,
+      "focus": 0.0728,
+      "sink": 0.0007
+    },
+    {
+      "block": 4,
+      "focus": 0.0649,
+      "sink": 0.0007
+    },
+    {
+      "block": 5,
+      "focus": 0.0573,
+      "sink": 0.0006
+    },
+    {
+      "block": 6,
+      "focus": 0.0327,
+      "sink": 0.0009
+    },
+    {
+      "block": 7,
+      "focus": 0.0308,
+      "sink": 0.0009
+    },
+    {
+      "block": 8,
+      "focus": 0.0257,
+      "sink": 0.001
+    },
+    {
+      "block": 9,
+      "focus": 0.0278,
+      "sink": 0.0009
+    },
+    {
+      "block": 10,
+      "focus": 0.0284,
+      "sink": 0.0009
+    },
+    {
+      "block": 11,
+      "focus": 0.0274,
+      "sink": 0.0009
+    },
+    {
+      "block": 12,
+      "focus": 0.0239,
+      "sink": 0.001
+    },
+    {
+      "block": 13,
+      "focus": 0.0239,
+      "sink": 0.001
+    },
+    {
+      "block": 14,
+      "focus": 0.0248,
+      "sink": 0.001
+    },
+    {
+      "block": 15,
+      "focus": 0.0251,
+      "sink": 0.001
+    },
+    {
+      "block": 16,
+      "focus": 0.0235,
+      "sink": 0.001
+    },
+    {
+      "block": 17,
+      "focus": 0.0237,
+      "sink": 0.001
+    },
+    {
+      "block": 18,
+      "focus": 0.024,
+      "sink": 0.001
+    },
+    {
+      "block": 19,
+      "focus": 0.0204,
+      "sink": 0.001
+    },
+    {
+      "block": 20,
+      "focus": 0.0207,
+      "sink": 0.0011
+    },
+    {
+      "block": 21,
+      "focus": 0.0227,
+      "sink": 0.001
+    },
+    {
+      "block": 22,
+      "focus": 0.0278,
+      "sink": 0.0009
+    },
+    {
+      "block": 23,
+      "focus": 0.0246,
+      "sink": 0.001
+    },
+    {
+      "block": 24,
+      "focus": 0.0214,
+      "sink": 0.0011
+    },
+    {
+      "block": 25,
+      "focus": 0.029,
+      "sink": 0.0009
+    },
+    {
+      "block": 26,
+      "focus": 0.0252,
+      "sink": 0.0012
+    },
+    {
+      "block": 27,
+      "focus": 0.0207,
+      "sink": 0.0012
+    }
+  ],
+  "attention_focus_mean_pure_noise": 3.54,
+  "attention_focus_mean_late": 3.53,
+  "attention_uniform_top10": 0.0128,
+  "cross_attn_shape": [
+    1,
+    196,
+    785
+  ],
+  "cross_attn_bias_slot_mass": 0.0008,
+  "attention_per_frame": [
+    0.2488,
+    0.2224,
+    0.2306,
+    0.2981
+  ],
+  "attention_peak_per_frame": [
+    [
+      13,
+      0
+    ],
+    [
+      13,
+      0
+    ],
+    [
+      13,
+      0
+    ],
+    [
+      13,
+      0
+    ]
+  ],
+  "self_attn_top_patches": [
+    [
+      7,
+      7
+    ],
+    [
+      5,
+      3
+    ],
+    [
+      7,
+      9
+    ],
+    [
+      6,
+      3
+    ],
+    [
+      5,
+      4
+    ]
+  ],
+  "spatial_sim_near": 0.514,
+  "spatial_sim_far": -0.15,
+  "output_shape": [
+    1,
+    8,
+    28,
+    28
+  ],
+  "final_layer_out_dim": 32,
+  "eps_std": 1.0119,
+  "sigma_mean": -0.121,
+  "echo_cosine": 1.0,
+  "guess_frac_pct": 0.8,
+  "ablations": [
+    {
+      "changed": "action zeroed out",
+      "how": "y = 0",
+      "pct_pure_noise": 80.17,
+      "pct_near_end": 4.02
+    },
+    {
+      "changed": "context frames in reverse order",
+      "how": "x_cond.flip(1)",
+      "pct_pure_noise": 24.64,
+      "pct_near_end": 1.1
+    },
+    {
+      "changed": "all 4 context frames = 'now'",
+      "how": "no motion history",
+      "pct_pure_noise": 9.34,
+      "pct_near_end": 1.46
+    },
+    {
+      "changed": "ask for 1s instead of 10s",
+      "how": "different horizon",
+      "pct_pure_noise": 46.49,
+      "pct_near_end": 23.39
+    }
+  ],
+  "ablation_reference_new_noise_pct": 142.1,
+  "attention_sim_a_vs_b": 0.95,
+  "attention_sim_context_blanked": 0.915,
+  "attention_sim_context_blanked_min": 0.72,
+  "attention_offset_pure_noise": 5.2,
+  "attention_offset_late": 5.21,
+  "attention_offset_uniform": 5.35,
+  "t_sweep": [
+    {
+      "step": 249,
+      "t": 999,
+      "echo": 1.0,
+      "guess_frac": 0.8,
+      "action_pct_of_guess": 80.57
+    },
+    {
+      "step": 200,
+      "t": 802,
+      "echo": 1.0,
+      "guess_frac": 2.7,
+      "action_pct_of_guess": 112.81
+    },
+    {
+      "step": 150,
+      "t": 602,
+      "echo": 0.994,
+      "guess_frac": 10.8,
+      "action_pct_of_guess": 106.85
+    },
+    {
+      "step": 100,
+      "t": 401,
+      "echo": 0.944,
+      "guess_frac": 33.0,
+      "action_pct_of_guess": 21.91
+    },
+    {
+      "step": 50,
+      "t": 201,
+      "echo": 0.719,
+      "guess_frac": 72.4,
+      "action_pct_of_guess": 6.49
+    },
+    {
+      "step": 25,
+      "t": 100,
+      "echo": 0.461,
+      "guess_frac": 101.4,
+      "action_pct_of_guess": 4.09
+    },
+    {
+      "step": 5,
+      "t": 20,
+      "echo": 0.169,
+      "guess_frac": 151.5,
+      "action_pct_of_guess": 3.89
+    }
+  ],
+  "filmstrip": [
+    {
+      "step": 249,
+      "t": 999
+    },
+    {
+      "step": 200,
+      "t": 802
+    },
+    {
+      "step": 150,
+      "t": 602
+    },
+    {
+      "step": 100,
+      "t": 401
+    },
+    {
+      "step": 50,
+      "t": 201
+    },
+    {
+      "step": 25,
+      "t": 100
+    },
+    {
+      "step": 10,
+      "t": 40
+    },
+    {
+      "step": 0,
+      "t": 0
+    }
+  ],
+  "action_delta_zero_max": 0.1156,
+  "action_delta_mirror_max": 0.0763,
+  "action_mirror": [
+    5.9155,
+    2.5192,
+    0.6882
+  ],
+  "tile_px": 16,
+  "image_size": 224
+}

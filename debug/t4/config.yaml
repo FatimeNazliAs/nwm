@@ -1,0 +1,111 @@
+# T4 — which prediction to look at.
+#
+#  WHAT TO CHANGE — the three lines in section 1, and nothing else.
+#
+#     trajectory   which drive to watch
+#     time         the frame that counts as "now": where the robot is standing,
+#                  and where its 4 context frames end
+#     sec          how far ahead to predict FROM that moment, in seconds
+#
+#  time is WHERE you start.  sec is HOW FAR you look from there.
+#  The two together pick the frame the model must imagine:
+#
+#     target frame  =  time + sec x 4        (the data runs at 4 frames/second)
+#     e.g. time 171, sec 16  ->  frame 235
+#
+#  HOW TO CHANGE — edit those three lines, save, then run:
+#
+#     ./debug/t4/update.sh
+#
+#  and refresh your browser tab.
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  1. THE SCENE  —  these are the three lines you edit
+# ══════════════════════════════════════════════════════════════════════
+
+trajectory: jackal_2019-12-21-13-21-20_1_r00
+time: 171
+sec: 16
+
+# ══════════════════════════════════════════════════════════════════════
+#  2. READY-MADE SCENES  —  copy any block over the three lines above
+# ══════════════════════════════════════════════════════════════════════
+#
+#  Measured over a 16 s horizon by `python debug/t4/find_scenes.py`.
+#  "drove" and "turned" are what the robot actually does between `time`
+#  and the frame you are asking for. `sec` can be 1, 2, 4, 8 or 16.
+#
+#  ── best all-rounder ── drives 18.5 m, turns 177°, scene changes the most
+#     trajectory: jackal_2019-08-18-15-04-02_5_r00
+#     time: 11
+#     sec: 16
+#
+#  ── a complete about-turn ── 19.4 m, 180°
+#     trajectory: jackal_2020-01-05-15-15-34_1_r00
+#     time: 59
+#     sec: 16
+#
+#  ── the straightest ── 19.6 m but only 33°. Pair with the one above:
+#     same distance, almost no turning.
+#     trajectory: jackal_2019-12-21-13-21-20_1_r00
+#     time: 171
+#     sec: 16
+#
+#  ── the calmest on offer ── 9.4 m, 9°. Nothing here is truly still; the
+#     eval index only keeps scenes with real motion.
+#     trajectory: jackal_2019-08-02-17-18-37_42_r00
+#     time: 43
+#     sec: 16
+#
+#  ── long drive, big visual change ── 19.7 m, 100°
+#     trajectory: jackal_2020-01-05-14-36-38_1_r00
+#     time: 115
+#     sec: 16
+#
+#  ── the original short-horizon example ── one second ahead
+#     trajectory: jackal_2019-08-02-16-28-30_5_r01
+#     time: 6
+#     sec: 1
+#
+#  ── your own ──
+#     Names come from data_splits/recon/test/traj_names.txt.
+#     Two rules, both checked for you with a message if you break them:
+#       time >= 3            (needs 4 context frames ending at `time`)
+#       time + 64 <= last    (the dataset always builds the full 16 s)
+#     The second does not depend on `sec`, so a scene that works at
+#     sec: 1 also works at sec: 16.
+#
+#     Run `python debug/t4/find_scenes.py` to search for more.
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  3. EVERYTHING ELSE  —  fine to ignore
+# ══════════════════════════════════════════════════════════════════════
+
+# Alternative way to pick a scene: a row number into the 500-row eval index
+# data_splits/recon/test/time.pkl. Only used when `trajectory` above is blank.
+sample: 0
+
+# Which denoising step to probe. Must be one of the 250 the real loop uses
+# (0, 4, 8, ... 995, 999). 999 is the loop's first call, where x is pure noise.
+diffusion_t: 999
+
+# For the attention pictures: a realistic late-loop input, built by re-noising
+# the true future frame to this step of 250. 0 = finished, 249 = pure noise.
+attn_step: 25
+
+# Which block's attention to draw. "auto" measures all 28 and picks the sharpest.
+attn_block: auto
+
+# Which block to trace layer by layer. All 28 are the same shape.
+block: 0
+
+# Which square of the 14x14 grid to follow. "center", an index 0-195, or "row,col".
+query_patch: center
+
+# Which points of the loop appear in the filmstrip. Leave blank for the default.
+filmstrip_steps:
+
+# Fixes the random noise, so repeated runs give identical pictures.
+seed: 0
