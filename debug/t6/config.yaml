@@ -1,0 +1,102 @@
+# T6 — which scene to run the whole evaluation on.
+#
+#  WHAT TO CHANGE — the three lines in section 1, and nothing else.
+#
+#     trajectory   which drive to predict
+#     time         the frame that counts as "now"
+#     sec          which of the five horizons the comparison uses
+#
+#  HOW TO CHANGE — edit those three lines, save, then run:
+#
+#     ./debug/t6/update.sh
+#
+#  and refresh your browser tab.
+#
+#  This stage takes a few minutes: it predicts your scene at all five
+#  horizons, runs two more predictions to compare against, and then scores
+#  all 500 test scenes. The other stages take about one minute.
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  1. THE SCENE  —  these are the three lines you edit
+# ══════════════════════════════════════════════════════════════════════
+
+trajectory: jackal_2019-12-21-13-21-20_1_r00
+time: 171
+sec: 16
+
+# ══════════════════════════════════════════════════════════════════════
+#  2. READY-MADE SCENES  —  copy any block over the three lines above
+# ══════════════════════════════════════════════════════════════════════
+#
+#  Measured over a 16 s horizon by `python debug/t4/find_scenes.py`.
+#  "drove" and "turned" are what the robot actually does between `time`
+#  and the frame you are asking for. `sec` can be 1, 2, 4, 8 or 16.
+#
+#  ── best all-rounder ── drives 18.5 m, turns 177°, scene changes the most
+#     trajectory: jackal_2019-08-18-15-04-02_5_r00
+#     time: 11
+#     sec: 16
+#
+#  ── a complete about-turn ── 19.4 m, 180°
+#     trajectory: jackal_2020-01-05-15-15-34_1_r00
+#     time: 59
+#     sec: 16
+#
+#  ── the straightest ── 19.6 m but only 33°. Pair with the one above:
+#     same distance, almost no turning.
+#     trajectory: jackal_2019-12-21-13-21-20_1_r00
+#     time: 171
+#     sec: 16
+#
+#  ── the calmest on offer ── 9.4 m, 9°. Nothing here is truly still; the
+#     eval index only keeps scenes with real motion.
+#     trajectory: jackal_2019-08-02-17-18-37_42_r00
+#     time: 43
+#     sec: 16
+#
+#  ── long drive, big visual change ── 19.7 m, 100°
+#     trajectory: jackal_2020-01-05-14-36-38_1_r00
+#     time: 115
+#     sec: 16
+#
+#  ── the original short-horizon example ── one second ahead
+#     trajectory: jackal_2019-08-02-16-28-30_5_r01
+#     time: 6
+#     sec: 1
+#
+#  ── your own ──
+#     Names come from data_splits/recon/test/traj_names.txt.
+#     Two rules, both checked for you with a message if you break them:
+#       time >= 3            (needs 4 context frames ending at `time`)
+#       time + 64 <= last    (the dataset always builds the full 16 s)
+#     The second does not depend on `sec`, so a scene that works at
+#     sec: 1 also works at sec: 16.
+#
+#     Run `python debug/t4/find_scenes.py` to search for more.
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  3. EVERYTHING ELSE  —  fine to ignore
+# ══════════════════════════════════════════════════════════════════════
+
+# Alternative way to pick a scene: a row number into the 500-row eval index
+# data_splits/recon/test/time.pkl. Only used when `trajectory` above is blank.
+sample: 0
+
+# Fixes the starting noise, so repeated runs give identical pictures.
+# The real evaluation does not seed at all.
+seed: 0
+
+# The starting noise for the "same action, different noise" comparison.
+compare_seed: 7
+
+# The finished 500-scene run this stage scores. Both folders hold 500
+# id_<N>/ folders of 1.png 2.png 4.png 8.png 16.png -- one side predicted,
+# one side true. Produced by the Phase-4 run; nothing here regenerates them.
+predictions_dir: /data/logs/nwm_eval/nwm_cdit_xl/recon/time
+ground_truth_dir: /data/logs/nwm_eval/gt/recon/time
+
+# How many scene folders the scorer loads at once. 64 is the eval's own
+# default (isolated_nwm_eval.py --batch_size).
+score_batch_size: 64

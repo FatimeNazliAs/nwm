@@ -1,0 +1,261 @@
+{
+  "_schema_version": 1,
+  "_stage": "t6",
+  "_images": [
+    "ctx_f0",
+    "ctx_f1",
+    "ctx_f2",
+    "ctx_f3",
+    "pred_1s",
+    "truth_1s",
+    "pred_2s",
+    "truth_2s",
+    "pred_4s",
+    "truth_4s",
+    "pred_8s",
+    "truth_8s",
+    "pred_16s",
+    "truth_16s",
+    "cmp_noaction",
+    "cmp_otherseed",
+    "cmp_start",
+    "curve"
+  ],
+  "trajectory": "jackal_2019-12-21-13-21-20_1_r00",
+  "curr_time": 171,
+  "row": 0,
+  "scene_mode": "trajectory (in test split)",
+  "context_size": 4,
+  "context_frame_numbers": [
+    168,
+    169,
+    170,
+    171
+  ],
+  "sec": 16,
+  "ts": 64,
+  "input_fps": 4,
+  "target_frame_number": 235,
+  "secs_swept": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "image_size": 224,
+  "latent_size": 28,
+  "in_channels": 4,
+  "model": "CDiT-XL/2",
+  "checkpoint": "0100000",
+  "train_step": 100000,
+  "params_total_m": 1012.0,
+  "vae": "stabilityai/sd-vae-ft-ema",
+  "respaced_steps": 250,
+  "eval_type": "time",
+  "dataset": "recon",
+  "seed": 0,
+  "compare_seed": 7,
+  "autocast": "bfloat16 (infer.py:71)",
+  "sweep": [
+    {
+      "sec": 1,
+      "ts": 4,
+      "target_frame": 175,
+      "action": [
+        0.8557,
+        0.1705,
+        0.4
+      ],
+      "seconds": 4.1,
+      "pred_bytes": 71299,
+      "lpips": 0.18963085114955902,
+      "dreamsim": 0.0756382942199707
+    },
+    {
+      "sec": 2,
+      "ts": 8,
+      "target_frame": 179,
+      "action": [
+        1.8468,
+        0.842,
+        0.6916
+      ],
+      "seconds": 4.0,
+      "pred_bytes": 68076,
+      "lpips": 0.26337796449661255,
+      "dreamsim": 0.07851338386535645
+    },
+    {
+      "sec": 4,
+      "ts": 16,
+      "target_frame": 187,
+      "action": [
+        4.1999,
+        0.922,
+        -0.3002
+      ],
+      "seconds": 4.0,
+      "pred_bytes": 73060,
+      "lpips": 0.3783871531486511,
+      "dreamsim": 0.1565004587173462
+    },
+    {
+      "sec": 8,
+      "ts": 32,
+      "target_frame": 203,
+      "action": [
+        8.868,
+        -0.8498,
+        -0.5623
+      ],
+      "seconds": 4.0,
+      "pred_bytes": 72279,
+      "lpips": 0.3551466464996338,
+      "dreamsim": 0.1328279972076416
+    },
+    {
+      "sec": 16,
+      "ts": 64,
+      "target_frame": 235,
+      "action": [
+        6.0276,
+        -7.7065,
+        -0.5773
+      ],
+      "seconds": 4.0,
+      "pred_bytes": 75588,
+      "lpips": 0.29421761631965637,
+      "dreamsim": 0.08644211292266846
+    }
+  ],
+  "predict_seconds": 20.2,
+  "pred_dir": "debug/out/t6/jackal_2019-12-21-13-21-20_1_r00__t171/run/nwm_cdit_xl/recon/time/id_0",
+  "truth_dir": "debug/out/t6/jackal_2019-12-21-13-21-20_1_r00__t171/run/gt/recon/time/id_0",
+  "file_pattern": "id_<row>/<sec>.png",
+  "files_this_scene": 10,
+  "scorer_imports_model": false,
+  "lpips_net": "alex",
+  "fid_feature_dim": 2048,
+  "fid_is_per_pair": false,
+  "compare": [
+    {
+      "label": "the prediction",
+      "pixel_mae": 0.08892909437417984,
+      "lpips": 0.29421761631965637,
+      "dreamsim": 0.08644211292266846,
+      "lpips_vs_start": 0.4366125166416168,
+      "dreamsim_vs_start": 0.17315596342086792
+    },
+    {
+      "label": "action removed",
+      "pixel_mae": 0.0798487663269043,
+      "lpips": 0.30351880192756653,
+      "dreamsim": 0.08705806732177734,
+      "lpips_vs_start": 0.4246629476547241,
+      "dreamsim_vs_start": 0.15585678815841675
+    },
+    {
+      "label": "different starting noise",
+      "pixel_mae": 0.10545317083597183,
+      "lpips": 0.35733431577682495,
+      "dreamsim": 0.08940619230270386,
+      "lpips_vs_start": 0.4363483190536499,
+      "dreamsim_vs_start": 0.18185102939605713
+    }
+  ],
+  "compare_ranks": {
+    "pixel_mae": [
+      "action removed",
+      "the prediction",
+      "different starting noise"
+    ],
+    "lpips": [
+      "the prediction",
+      "action removed",
+      "different starting noise"
+    ],
+    "dreamsim": [
+      "the prediction",
+      "action removed",
+      "different starting noise"
+    ]
+  },
+  "compare_lpips_dreamsim_agree": true,
+  "truth_from_start": {
+    "lpips": 0.4,
+    "dreamsim": 0.1177
+  },
+  "other_seed_vs_prediction": {
+    "pixel_mae": 0.0856,
+    "lpips": 0.2987,
+    "dreamsim": 0.0716
+  },
+  "run_scenes": 500,
+  "run_pairs": 2500,
+  "run_files": 5000,
+  "run_predictions_dir": "/data/logs/nwm_eval/nwm_cdit_xl/recon/time",
+  "run_ground_truth_dir": "/data/logs/nwm_eval/gt/recon/time",
+  "run_example_folder": "id_0",
+  "run_example_files": [
+    {
+      "sec": 1,
+      "bytes": 90262
+    },
+    {
+      "sec": 2,
+      "bytes": 89046
+    },
+    {
+      "sec": 4,
+      "bytes": 87960
+    },
+    {
+      "sec": 8,
+      "bytes": 74700
+    },
+    {
+      "sec": 16,
+      "bytes": 87702
+    }
+  ],
+  "score_seconds": 70.2,
+  "score_batch_size": 64,
+  "score_batches": 8,
+  "score_last_batch": 52,
+  "per_horizon": [
+    {
+      "sec": 1,
+      "lpips": 0.2568,
+      "dreamsim": 0.0934,
+      "fid": 25.04
+    },
+    {
+      "sec": 2,
+      "lpips": 0.2815,
+      "dreamsim": 0.0995,
+      "fid": 25.37
+    },
+    {
+      "sec": 4,
+      "lpips": 0.3059,
+      "dreamsim": 0.1068,
+      "fid": 26.4
+    },
+    {
+      "sec": 8,
+      "lpips": 0.3407,
+      "dreamsim": 0.1204,
+      "fid": 26.39
+    },
+    {
+      "sec": 16,
+      "lpips": 0.4133,
+      "dreamsim": 0.1698,
+      "fid": 31.24
+    }
+  ],
+  "growth_lpips_pct": 60.9,
+  "growth_dreamsim_pct": 81.7,
+  "growth_fid_pct": 24.7
+}
