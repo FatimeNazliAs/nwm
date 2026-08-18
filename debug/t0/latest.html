@@ -1,0 +1,331 @@
+<title>Navigation World Models — Overview</title>
+<style>
+  :root{
+    --ink:#181b23; --ink-2:#4a5262; --ink-3:#78808f;
+    --line:#e4e7ec; --line-2:#eef1f4;
+    --bg:#ffffff; --panel:#f7f8fa; --panel-2:#f1f3f6;
+    --indigo:#4f46e5; --indigo-soft:#eef0fe;
+    --teal:#0d9488; --teal-soft:#e3f4f1;
+    --amber:#b45309; --amber-soft:#fdf1e0;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:940px; margin:0 auto; padding:0 24px}
+  code,.mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace}
+
+  /* header */
+  header{padding:56px 0 30px}
+  .eyebrow{
+    font-size:12.5px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--indigo); font-weight:700; margin:0 0 14px;
+  }
+  h1{font-size:40px; line-height:1.08; margin:0 0 14px; letter-spacing:-.02em}
+  .lede{font-size:19px; color:var(--ink-2); margin:0 0 18px; max-width:760px}
+  .meta{font-size:13.5px; color:var(--ink-3)}
+  .meta a{color:var(--ink-3)}
+
+  /* one-line callout */
+  .callout{
+    background:var(--indigo-soft); border:1px solid #dfe2fb;
+    border-radius:var(--radius); padding:20px 22px; margin:8px 0 40px;
+    font-size:17px; color:#2c2a5e;
+  }
+  .callout b{color:#312e81}
+
+  section{padding:14px 0 26px}
+  h2{font-size:14px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3);
+     font-weight:700; margin:0 0 18px; padding-bottom:10px; border-bottom:1px solid var(--line)}
+
+  /* paradigm shift */
+  .shift{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .shift .card{border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px}
+  .shift .tag{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin:0 0 8px}
+  .shift .old .tag{color:var(--ink-3)}
+  .shift .new{border-color:#d6d9fb; background:#fbfbff}
+  .shift .new .tag{color:var(--indigo)}
+  .flow{font-size:15px; margin:6px 0 8px; font-weight:600}
+  .flow .mono{background:var(--panel-2); padding:2px 7px; border-radius:6px; font-size:13.5px; font-weight:500}
+  .shift p{margin:6px 0 0; font-size:14px; color:var(--ink-2)}
+
+  /* pipeline */
+  .pipe{display:flex; align-items:stretch; gap:0; flex-wrap:wrap; margin:4px 0 6px}
+  .pstep{
+    flex:1 1 0; min-width:96px; text-align:center; padding:14px 8px;
+    border:1px solid var(--line); border-radius:12px; background:var(--panel);
+  }
+  .pstep .n{font-size:11px; color:var(--ink-3); font-weight:700}
+  .pstep .t{font-size:13.5px; font-weight:650; margin-top:4px; line-height:1.25}
+  .pstep .s{font-size:11.5px; color:var(--ink-3); margin-top:3px}
+  .pstep.hl{background:var(--indigo-soft); border-color:#d6d9fb}
+  .pstep.hl .t{color:var(--indigo)}
+  .parr{display:flex; align-items:center; justify-content:center; color:var(--ink-3); font-size:18px; padding:0 4px}
+  .pipe-note{font-size:13px; color:var(--ink-3); margin:12px 0 0}
+
+  /* io */
+  .io{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .io .card{border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px}
+  .io h3{margin:0 0 12px; font-size:15px; display:flex; align-items:center; gap:8px}
+  .io h3 .dot{width:9px; height:9px; border-radius:50%}
+  .io .in .dot{background:var(--teal)} .io .out .dot{background:var(--indigo)}
+  .io ul{margin:0; padding-left:0; list-style:none}
+  .io li{font-size:14px; color:var(--ink-2); padding:7px 0; border-top:1px solid var(--line-2)}
+  .io li:first-child{border-top:none; padding-top:0}
+  .io li b{color:var(--ink)}
+  .io .mono{background:var(--panel-2); padding:1px 6px; border-radius:5px; font-size:12.5px}
+
+  /* models */
+  .models{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  .models .card{border:1px solid var(--line); border-radius:var(--radius); padding:18px 18px}
+  .models .name{font-size:15px; font-weight:700; margin:0 0 3px}
+  .models .sub{font-size:12px; color:var(--indigo); font-weight:600; margin:0 0 9px}
+  .models p{margin:0; font-size:13.5px; color:var(--ink-2)}
+  .frozen{display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--teal); background:var(--teal-soft); padding:2px 7px; border-radius:20px; margin-left:6px; vertical-align:middle}
+
+  /* capabilities */
+  .legend{font-size:13px; color:var(--ink-2); margin:-6px 0 16px; display:flex; gap:20px; flex-wrap:wrap}
+  .legend span{display:inline-flex; align-items:center; gap:7px}
+  .pill{width:11px; height:11px; border-radius:50%; display:inline-block}
+  .pill.on{background:var(--amber)} .pill.off{background:#cfd4dc}
+  .caps{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .cap{border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; position:relative}
+  .cap.on{border-color:#f0d9b5; background:#fffdf9}
+  .cap .top{display:flex; align-items:center; gap:9px; margin:0 0 6px}
+  .cap .top .pill{flex:none}
+  .cap h3{margin:0; font-size:15px}
+  .cap .scope{margin-left:auto; font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-3)}
+  .cap.on .scope{color:var(--amber)}
+  .cap p{margin:0; font-size:13.5px; color:var(--ink-2)}
+
+  /* stats */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+  .stat{border:1px solid var(--line); border-radius:var(--radius); padding:16px 16px; background:var(--panel)}
+  .stat .v{font-size:26px; font-weight:750; letter-spacing:-.02em; line-height:1}
+  .stat .v small{font-size:14px; font-weight:600; color:var(--ink-3)}
+  .stat .k{font-size:12.5px; color:var(--ink-2); margin-top:7px}
+  .stat.accent .v{color:var(--indigo)}
+
+  /* data / metrics */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .box{border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px}
+  .box h3{margin:0 0 10px; font-size:15px}
+  .chips{display:flex; flex-wrap:wrap; gap:7px}
+  .chip{font-size:12.5px; padding:4px 10px; border-radius:20px; background:var(--panel-2); color:var(--ink-2); border:1px solid var(--line)}
+  .chip.ood{background:var(--amber-soft); color:var(--amber); border-color:#f0d9b5}
+  .box p{font-size:13px; color:var(--ink-3); margin:11px 0 0}
+
+  /* teardown link */
+  .teardown{background:#0f1220; color:#e7e9f2; border-radius:16px; padding:26px 28px; margin:12px 0 20px}
+  .teardown h2{color:#9aa2c0; border-color:#2a2e45}
+  .teardown p{font-size:14.5px; color:#c7cbe0; margin:0 0 14px; max-width:720px}
+  .teardown .path{font-size:13.5px; margin:0 0 16px}
+  .teardown .path .mono{background:#1c2036; color:#c7cbe0; padding:2px 8px; border-radius:6px}
+  .tlinks{display:flex; gap:10px; flex-wrap:wrap}
+  .tlink{display:inline-block; font-size:13.5px; font-weight:600; text-decoration:none; color:#c7cbf5;
+    border:1px solid #33395c; border-radius:9px; padding:8px 14px; background:#171b2e}
+  .tlink:hover{background:#1f2440}
+
+  footer{border-top:1px solid var(--line); padding:22px 0 60px; font-size:13px; color:var(--ink-3)}
+  footer a{color:var(--ink-3)}
+
+  @media (max-width:760px){
+    h1{font-size:31px}
+    .shift,.io,.models,.caps,.grid2{grid-template-columns:1fr}
+    .stats{grid-template-columns:1fr 1fr}
+    .pstep{flex-basis:40%}
+  }
+</style>
+
+<header>
+  <div class="wrap">
+    <p class="eyebrow">Paper walkthrough · Start here</p>
+    <h1>Navigation World Models</h1>
+    <p class="lede">A robot that plans by <em>imagining</em>: instead of mapping an image straight to an action, it generates the future it <em>would</em> see for a set of actions, then picks the actions whose imagined future best reaches the goal.</p>
+    <p class="meta">Bar, Zhou, Tran, Darrell, LeCun — FAIR at Meta &amp; NYU · <a href="https://arxiv.org/abs/2412.03572">arXiv:2412.03572</a></p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="callout">
+    <b>In one line:</b> NWM is a controllable video-generation model — give it the current view and a navigation action, and it predicts the next view. Chain those predictions and you can simulate whole trajectories and plan on top of them.
+  </div>
+
+  <!-- paradigm -->
+  <section>
+    <h2>The shift it makes</h2>
+    <div class="shift">
+      <div class="card old">
+        <p class="tag">Usual navigation policy</p>
+        <p class="flow"><span class="mono">image → policy → action</span></p>
+        <p>Reactive. Behaviour is baked in at training time — you can't later say "no left turns," and it can't reason far ahead. (GNM, ViNT, NoMaD work this way.)</p>
+      </div>
+      <div class="card new">
+        <p class="tag">Navigation World Model</p>
+        <p class="flow"><span class="mono">image + actions → future images</span></p>
+        <p>Predicts the <em>world</em>, not the action. Planning then happens <em>inside</em> the model — sample actions, imagine outcomes, keep the best. Constraints can be added at plan time, no retraining.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- pipeline -->
+  <section>
+    <h2>What one prediction does</h2>
+    <div class="pipe">
+      <div class="pstep"><div class="n">IN</div><div class="t">Past frames + action</div><div class="s">4 context views</div></div>
+      <div class="parr">→</div>
+      <div class="pstep"><div class="n">1</div><div class="t">VAE encode</div><div class="s">pixels → latents</div></div>
+      <div class="parr">→</div>
+      <div class="pstep hl"><div class="n">2</div><div class="t">CDiT denoise</div><div class="s">the world model</div></div>
+      <div class="parr">→</div>
+      <div class="pstep hl"><div class="n">3</div><div class="t">Diffusion loop</div><div class="s">noise → clean</div></div>
+      <div class="parr">→</div>
+      <div class="pstep"><div class="n">4</div><div class="t">VAE decode</div><div class="s">latents → pixels</div></div>
+      <div class="parr">→</div>
+      <div class="pstep"><div class="n">OUT</div><div class="t">Predicted frame</div><div class="s">score vs goal</div></div>
+    </div>
+    <p class="pipe-note">The model works in the VAE's compressed latent space; it only returns to pixels to show a result or to compare a prediction against the goal image.</p>
+  </section>
+
+  <!-- input / output -->
+  <section>
+    <h2>Input &amp; output</h2>
+    <div class="io">
+      <div class="card in">
+        <h3><span class="dot"></span>Input</h3>
+        <ul>
+          <li><b>Observations</b> — the current view plus up to <b>4</b> past frames (context).</li>
+          <li><b>Action</b> — where to move and turn: translation <span class="mono">u ∈ ℝ²</span> (forward/back, left/right) and yaw <span class="mono">φ</span>.</li>
+          <li><b>Time-shift</b> <span class="mono">k</span> — how far ahead to jump, up to <b>±16 s</b>. This is what makes "predict N seconds later" a single call.</li>
+        </ul>
+      </div>
+      <div class="card out">
+        <h3><span class="dot"></span>Output</h3>
+        <ul>
+          <li><b>A predicted observation</b> — the frame the agent would see after that action.</li>
+          <li><b>Feed it back in</b> and the model produces the next one, and the next — an imagined video.</li>
+          <li><b>Stochastic</b> — sampling different noise gives different plausible futures, so a plan can be scored over several rolls.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- models -->
+  <section>
+    <h2>Under the hood</h2>
+    <div class="models">
+      <div class="card">
+        <p class="name">CDiT</p>
+        <p class="sub">Conditional Diffusion Transformer</p>
+        <p>The world model itself, ~1B params. Denoises the next frame while attending to context frames by cross-attention. Cost grows <em>linearly</em> with context — ≈4× fewer FLOPs than a plain DiT.</p>
+      </div>
+      <div class="card">
+        <p class="name">VAE <span class="frozen">frozen</span></p>
+        <p class="sub">Stable Diffusion sd-vae-ft-ema</p>
+        <p>An off-the-shelf autoencoder that compresses each image to a small latent and back. NWM does <em>not</em> train it — it just borrows it so the transformer works on compact latents.</p>
+      </div>
+      <div class="card">
+        <p class="name">Conditioning</p>
+        <p class="sub">action + time + timestep → AdaLN</p>
+        <p>The action, the time-shift, and the diffusion timestep each become an embedding; they're summed into one vector <span class="mono">ξ</span> that modulates every block via AdaLN.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- capabilities -->
+  <section>
+    <h2>What it can do</h2>
+    <div class="legend">
+      <span><i class="pill on"></i> Covered in our teardown</span>
+      <span><i class="pill off"></i> In the paper, beyond our teardown</span>
+    </div>
+    <div class="caps">
+      <div class="cap on">
+        <div class="top"><i class="pill on"></i><h3>Predict (one-shot / "time")</h3><span class="scope">In scope</span></div>
+        <p>Given a start frame + action, predict the frame <em>N</em> seconds ahead in a single forward pass. This is the slice our teardown follows, end to end, on RECON.</p>
+      </div>
+      <div class="cap">
+        <div class="top"><i class="pill off"></i><h3>Rollout</h3><span class="scope">Deferred</span></div>
+        <p>Feed each prediction back in to autoregressively imagine a full video — up to 16 s of navigation from a single first image and an action sequence.</p>
+      </div>
+      <div class="cap">
+        <div class="top"><i class="pill off"></i><h3>Standalone planning</h3><span class="scope">Deferred</span></div>
+        <p>Use NWM as a dynamics model in MPC: sample action sequences (Cross-Entropy Method), simulate each, and keep the one whose final frame looks most like the goal.</p>
+      </div>
+      <div class="cap">
+        <div class="top"><i class="pill off"></i><h3>Ranking an external policy</h3><span class="scope">Deferred</span></div>
+        <p>Let NoMaD propose 16–32 trajectories, simulate them all with NWM, and rank by goal similarity. Improves navigation over the policy alone.</p>
+      </div>
+      <div class="cap">
+        <div class="top"><i class="pill off"></i><h3>Planning with constraints</h3><span class="scope">Deferred</span></div>
+        <p>Forbid or force moves at plan time ("forward first," "no left") by zeroing those actions — behaviour changes with no retraining.</p>
+      </div>
+      <div class="cap">
+        <div class="top"><i class="pill off"></i><h3>Imagination in unknown places</h3><span class="scope">Deferred</span></div>
+        <p>From a single image in an unseen environment, hallucinate plausible trajectories using visual priors — sharpened by unlabeled Ego4D training.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- stats -->
+  <section>
+    <h2>Why it's worth the trouble</h2>
+    <div class="stats">
+      <div class="stat accent"><div class="v">1<small>B</small></div><div class="k">CDiT-XL parameters</div></div>
+      <div class="stat accent"><div class="v">≈4<small>×</small></div><div class="k">fewer FLOPs than a plain DiT</div></div>
+      <div class="stat"><div class="v">1.13</div><div class="k">NWM planning ATE on RECON <small>(NoMaD 1.95)</small></div></div>
+      <div class="stat"><div class="v">±16<small>s</small></div><div class="k">horizon a single call can reach</div></div>
+    </div>
+  </section>
+
+  <!-- data / metrics -->
+  <section>
+    <h2>Trained &amp; measured on</h2>
+    <div class="grid2">
+      <div class="box">
+        <h3>Datasets</h3>
+        <div class="chips">
+          <span class="chip">RECON</span><span class="chip">SCAND</span>
+          <span class="chip">TartanDrive</span><span class="chip">HuRoN</span>
+          <span class="chip">Ego4D · unlabeled</span>
+          <span class="chip ood">Go Stanford · OOD test</span>
+        </div>
+        <p>Robot datasets give real actions (pose + yaw); Ego4D adds action-free video where only time-shift is known. Go Stanford is held out to test unseen environments.</p>
+      </div>
+      <div class="box">
+        <h3>Metrics</h3>
+        <div class="chips">
+          <span class="chip">LPIPS</span><span class="chip">DreamSim</span><span class="chip">PSNR</span>
+          <span class="chip">FID</span><span class="chip">FVD</span>
+          <span class="chip">ATE</span><span class="chip">RPE</span>
+        </div>
+        <p>Perceptual similarity to ground truth (LPIPS, DreamSim, PSNR), generation quality (FID, FVD), and trajectory accuracy for the planning experiments (ATE, RPE).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- teardown connection -->
+  <div class="teardown">
+    <h2>Where our teardown fits</h2>
+    <p>Our debug walkthrough deliberately takes the narrowest slice — <b>Predict / one-shot / RECON</b> — and follows one sample through every stage of that box above. Rollout, planning, and ranking are real parts of the paper but out of our scope.</p>
+    <p class="path"><span class="mono">data → VAE encode → CDiT denoise → diffusion loop → VAE decode → predicted frame → metrics</span></p>
+    <div class="tlinks">
+      <a class="tlink" href="https://claude.ai/code/artifact/2a64ac6a-da9c-431d-9a3f-f41c29d26f3d">T1 · map of the pipeline →</a>
+      <a class="tlink" href="https://claude.ai/code/artifact/f25c8202-9bc3-4672-aed3-6963633a5d96">T2 · one RECON sample →</a>
+      <a class="tlink" href="https://claude.ai/code/artifact/67ff8417-b8ab-47b7-9a95-b27f9c8af427">T3 · the VAE →</a>
+      <a class="tlink" href="https://claude.ai/code/artifact/b6cd5f71-733b-43a3-bc73-f7fd52739035">T4 · CDiT architecture →</a>
+      <a class="tlink" href="https://claude.ai/code/artifact/9c9379da-52b3-4163-8a6f-89f4472aa5a4">T5 · the diffusion loop →</a>
+      <a class="tlink" href="https://claude.ai/code/artifact/30a9d5de-f7a6-4da1-bad8-d2c66370eeaa">T6 · inference &amp; metrics →</a>
+    </div>
+  </div>
+
+  <footer>
+    Overview of Navigation World Models (arXiv:2412.03572). Figures and numbers drawn from the paper. Built as a lead-in to the T1–T6 debug walkthrough.
+  </footer>
+</div>
+

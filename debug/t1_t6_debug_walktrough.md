@@ -51,16 +51,21 @@ repo. The pages themselves stay private; only the URLs are public.
 
 ---
 
-## The six stages at a glance
+## The stages at a glance
 
 | Stage | Subject | Code | Notion | Webpage |
 | --- | --- | --- | --- | --- |
+| **T0** | The paper in one page — what NWM is, before any code | `debug/t0/` | — | [artifact](https://claude.ai/code/artifact/ea04dacd-05a3-44d4-9e91-13e80950f2a0) |
 | **T1** | Bird's-eye map of the pipeline | `debug/t1/trace.py` | [T1](https://app.notion.com/p/3a5d0eaafe558052a58bf581ce4e12dc) | [artifact](https://claude.ai/code/artifact/2a64ac6a-da9c-431d-9a3f-f41c29d26f3d) |
 | **T2** | What one RECON sample is | `debug/t2/` | [T2](https://app.notion.com/p/3a8d0eaafe558090a3e3d5dd7caf8478) | [artifact](https://claude.ai/code/artifact/f25c8202-9bc3-4672-aed3-6963633a5d96) |
 | **T3** | The VAE — pixels ↔ latents | `debug/t3/` | [T3](https://app.notion.com/p/3a8d0eaafe55818aad25e0e42be7e723) | [artifact](https://claude.ai/code/artifact/67ff8417-b8ab-47b7-9a95-b27f9c8af427) |
 | **T4** | CDiT — the model that predicts | `debug/t4/` | [T4](https://app.notion.com/p/3abd0eaafe55809781b9db47f33ef023) | [artifact](https://claude.ai/code/artifact/b6cd5f71-733b-43a3-bc73-f7fd52739035) |
 | **T5** | The diffusion loop | `debug/t5/` | [T5](https://app.notion.com/p/3c0d0eaafe5580178880c90713877429) | [artifact](https://claude.ai/code/artifact/9c9379da-52b3-4163-8a6f-89f4472aa5a4) |
 | **T6** | Full inference and metrics | `debug/t6/` | [T6](https://app.notion.com/p/3c0d0eaafe5580629420d69a358ca3b8) | [artifact](https://claude.ai/code/artifact/30a9d5de-f7a6-4da1-bad8-d2c66370eeaa) |
+
+**T0 is not a probe stage.** Its page is hand-written and static — no `config.yaml`, no `probe.py`,
+no `build_page.py`. `./debug/t0/update.sh` only copies `debug/t0/latest.html` into `debug/out/t0/`
+and starts the same server, so it is still viewed at port 8000, path `/t0/latest.html`.
 
 **Artifact URLs are fixed per stage.** Always republish with `url=` or the link already given to
 advisors silently keeps showing the old run. There is a stale duplicate T4 artifact at
