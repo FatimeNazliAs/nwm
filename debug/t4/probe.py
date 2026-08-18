@@ -43,22 +43,27 @@ import yaml
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from diffusers.models import AutoencoderKL
 
 import misc
-from models import CDiT_models
 from debug.common import facts as facts_io
+from debug.common import images as images_io
+from debug.common import model as nwm
 from debug.common.report import hr, show
 from debug.common.scene import build_recon_eval_dataset, resolve_scene
 
-# ---- constants the real inference path uses ----
-VAE_NAME = "stabilityai/sd-vae-ft-ema"
-SCALING = 0.18215          # isolated_nwm_infer.py:79 / :87
-CKP = "0100000"            # isolated_nwm_infer.py argparse default --ckp
-INPUT_FPS = 4              # isolated_nwm_infer.py argparse default --input_fps
-SECS_SWEPT = [1, 2, 4, 8, 16]   # generate_time(): secs = [2**i for i in range(num_sec_eval)]
-DIFFUSION_STEPS = 1000     # create_diffusion default diffusion_steps
-RESPACED_STEPS = 250       # create_diffusion(str(250)) at isolated_nwm_infer.py:168
+CONFIG = "debug/t4/config.yaml"
+
+# The constants and the model/VAE/schedule setup used to live here. They now live
+# in debug/common/model.py, which T5 also uses -- two users make the seam real
+# (docs/adr/0005-probe-stays-linear.md closes on exactly this moment). Aliased so
+# the narration below still reads as prose.
+VAE_NAME = nwm.VAE_NAME
+SCALING = nwm.SCALING
+CKP = nwm.CKP
+INPUT_FPS = nwm.INPUT_FPS
+SECS_SWEPT = nwm.SECS_SWEPT
+DIFFUSION_STEPS = nwm.DIFFUSION_STEPS
+RESPACED_STEPS = nwm.RESPACED_STEPS
 
 # the 11 things adaLN-Zero produces per block, in the order models.py:105 unpacks them
 ADALN_NAMES = [
@@ -74,6 +79,51 @@ ADALN_NAMES = [
     ("scale_mlp", "feed-forward: scale"),
     ("gate_mlp", "feed-forward: how much of it to keep"),
 ]
+
+
+def read_config(path=CONFIG):
+    """Read and check debug/t4/config.yaml before anything expensive is built.
+
+    `diffusion_t` used to be checked after the model, the VAE and the context
+    latents were all in memory, and `attn_step` was never checked at all -- an
+    out-of-range value became an IndexError minutes in. Both are validated here,
+    against the real respaced schedule, which costs nothing: create_diffusion
+    only builds numpy arrays.
+
+    Knobs whose valid range depends on the model (`block`, `query_patch`) stay
+    where they are; nothing here can know the depth or the grid yet.
+    """
+    cfg = yaml.safe_load(open(path)) or {}
+    last = nwm.RESPACED_STEPS - 1
+
+    def whole(name, default):
+        try:
+            return int(cfg.get(name, default) if cfg.get(name) is not None else default)
+        except (TypeError, ValueError):
+            raise SystemExit(f"{path}: {name}={cfg.get(name)!r} is not a whole number.")
+
+    sec = whole("sec", 1)
+    if not (1 <= sec <= nwm.SECS_SWEPT[-1]):
+        raise SystemExit(f"{path}: sec={sec} is outside 1..{nwm.SECS_SWEPT[-1]}.")
+
+    t_map = list(nwm.build_diffusion().timestep_map)
+    t_val = whole("diffusion_t", t_map[-1])
+    if t_val not in t_map:
+        raise SystemExit(
+            f"{path}: diffusion_t={t_val} is never used by the real loop.\n"
+            f"  create_diffusion(str({nwm.RESPACED_STEPS})) keeps only these {len(t_map)} of "
+            f"{nwm.DIFFUSION_STEPS} steps:\n"
+            f"    {t_map[:6]} ... {t_map[-3:]}\n"
+            f"  Pick one of those (the loop starts at {t_map[-1]} and ends at {t_map[0]}).")
+
+    attn_step = whole("attn_step", 25)
+    if not (0 <= attn_step <= last):
+        raise SystemExit(
+            f"{path}: attn_step={attn_step} is outside 0..{last}.\n"
+            f"  It indexes the {nwm.RESPACED_STEPS} steps of the loop, not the "
+            f"{nwm.DIFFUSION_STEPS} training ones.")
+
+    return cfg, sec, t_val, attn_step
 
 
 def parse_query_patch(want, grid):
@@ -143,26 +193,22 @@ def overlay(ax, frame_img, heat, img_size, vmin, vmax):
 
 
 def main():
-    cfg = yaml.safe_load(open("debug/t4/config.yaml")) or {}
-
-    with open("config/eval_config.yaml") as f:
-        base = yaml.safe_load(f)
-    with open("config/nwm_cdit_xl.yaml") as f:
-        base.update(yaml.safe_load(f))
+    # Every knob is checked here, before the dataset, the checkpoint or the GPU.
+    cfg, sec, t_val, step_i = read_config()
+    base = nwm.load_config()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(int(cfg.get("seed", 0) or 0))
 
     # ---- 0. the scene, and what exactly we are asking for ----
     ds = build_recon_eval_dataset(base)
-    row, f_curr, curr_time, scene_tag, mode = resolve_scene(ds, cfg, "debug/t4/config.yaml")
+    row, f_curr, curr_time, scene_tag, mode = resolve_scene(ds, cfg, CONFIG)
     _, obs_image, gt_image, delta = ds[row]
 
-    sec = int(cfg.get("sec", 1) or 1)
     ts = sec * INPUT_FPS                      # generate_time(): eval_timesteps = sec*input_fps
     T = ds.context_size
     out_dir = f"debug/out/t4/{scene_tag}"
-    os.makedirs(out_dir, exist_ok=True)
+    save = images_io.Saver(out_dir)     # writes the PNGs and records the manifest
 
     hr("0) THE QUESTION WE ARE ASKING THE MODEL  (debug/t4/config.yaml)")
     print(f"  mode          : {mode}")
@@ -177,8 +223,8 @@ def main():
     hr("1) THE MODEL  (built exactly as isolated_nwm_infer.py:162)")
     latent_size = base["image_size"] // 8
     model_name = base["model"]
-    model = CDiT_models[model_name](context_size=T, input_size=latent_size, in_channels=4)
-    n_total = sum(p.numel() for p in model.parameters())
+    model, ckpt = nwm.build_cdit(base, context_size=T, latent_size=latent_size, device=device)
+    n_total = ckpt["params_total"]
     print(f"  {model_name}   (class {type(model).__name__}) -- NWM TRAINS THIS. It is the only")
     print(f"  part of the pipeline with learned weights of its own.")
     print(f"  depth (blocks)      : {len(model.blocks)}")
@@ -191,16 +237,11 @@ def main():
           f"(learn_sigma={model.learn_sigma}: 4 noise + 4 variance)")
     print(f"  total parameters    : {n_total/1e6:.1f} M")
 
-    ckp_path = f'{base["results_dir"]}/{base["run_name"]}/checkpoints/{CKP}.pth.tar'
-    print(f"\n  checkpoint          : {ckp_path}")
-    ckp = torch.load(ckp_path, map_location="cpu", weights_only=False)
-    print(f"  keys in the file    : {sorted(ckp.keys())}")
-    msg = model.load_state_dict(ckp["ema"], strict=True)
-    print(f"  load_state_dict     : {msg}   <- 'ema', the smoothed copy kept during training")
-    train_step = ckp.get("step", ckp.get("train_steps", "?"))
+    print(f"\n  checkpoint          : {ckpt['path']}")
+    print(f"  keys in the file    : {ckpt['keys_in_file']}")
+    print(f"  load_state_dict     : {ckpt['load_msg']}   <- 'ema', the smoothed copy kept during training")
+    train_step = ckpt["train_step"]
     print(f"  training step       : {train_step}")
-    del ckp
-    model.eval().to(device)
     print(f"  (the real eval also wraps this in torch.compile + DDP -- speed only, same maths)")
 
     # where the parameters actually live
@@ -237,28 +278,18 @@ def main():
 
     # ---- 2. the five inputs ----
     hr("2) THE FIVE THINGS forward() TAKES  (models.py:226)")
-    vae = AutoencoderKL.from_pretrained(VAE_NAME).to(device).eval()
+    vae = nwm.build_vae(device)
     ctx_px = obs_image[-T:].to(device)                       # (T, 3, 224, 224)
-    with torch.no_grad():
-        x_cond = vae.encode(ctx_px).latent_dist.sample().mul_(SCALING)   # (T, 4, 28, 28)
-    x_cond = x_cond.unsqueeze(0)                             # (1, T, 4, 28, 28), B=1
+    x_cond, _ = nwm.context_latents(vae, obs_image, T, device)   # (1, T, 4, 28, 28), B=1
 
     x = torch.randn(1, 4, latent_size, latent_size, device=device)       # infer.py:81
 
     # The respaced schedule, exactly as isolated_nwm_infer.py:168 builds it. Its
     # timestep_map IS the set of t values the model can ever be asked about, so we
     # read it rather than assuming the stride is a round number -- it is not.
-    from diffusion import create_diffusion
-    diffusion = create_diffusion(str(RESPACED_STEPS))
+    # t_val was checked against this same map in read_config, before the checkpoint.
+    diffusion = nwm.build_diffusion()
     t_map = list(diffusion.timestep_map)
-    t_val = int(cfg.get("diffusion_t", t_map[-1]))
-    if t_val not in t_map:
-        raise SystemExit(
-            f"debug/t4/config.yaml: diffusion_t={t_val} is never used by the real loop.\n"
-            f"  create_diffusion(str({RESPACED_STEPS})) keeps only these {len(t_map)} of "
-            f"{DIFFUSION_STEPS} steps:\n"
-            f"    {t_map[:6]} ... {t_map[-3:]}\n"
-            f"  Pick one of those (the loop starts at {t_map[-1]} and ends at {t_map[0]}).")
     t = torch.full((1,), t_val, device=device, dtype=torch.float32)
     y = delta[:ts].sum(dim=0, keepdim=True).to(device).float()           # infer.py:111
     rel_t = torch.full((1,), ts / 128.0, device=device)                  # infer.py:75-76
@@ -511,10 +542,9 @@ def main():
     # stand-in with one formula from the same schedule: take the TRUE future
     # latent and add exactly as much noise as step i carries. That is q_sample --
     # the forward process, no loop, no model.
-    step_i = int(cfg.get("attn_step", 25))
-    t_late = int(t_map[step_i])
+    t_late = int(t_map[step_i])          # step_i checked in read_config
     with torch.no_grad():
-        z_gt = vae.encode(gt_image[ts - 1:ts].to(device)).latent_dist.sample().mul_(SCALING)
+        z_gt = nwm.encode(vae, gt_image[ts - 1:ts].to(device))
         x_late = diffusion.q_sample(z_gt, torch.tensor([step_i], device=device))
     t_late_t = torch.full((1,), t_late, device=device, dtype=torch.float32)
     depth_late, grabbed = attention_profile(x_late, t_late_t)
@@ -795,8 +825,7 @@ def main():
         f"TOP: one patch of the FUTURE frame, and where it reads the {T} past frames     "
         f"BOTTOM: its own frame, the split, how focused it is, frame-slot identity",
         fontsize=12)
-    p1 = os.path.join(out_dir, "cdit_attention.png")
-    fig.savefig(p1, dpi=120, bbox_inches="tight"); plt.close(fig)
+    p1 = save.figure("cdit_attention", fig, dpi=120, bbox_inches="tight")
     print(f"  wrote {p1}")
 
     # --- figure 2: the inputs and the output ---
@@ -855,27 +884,25 @@ def main():
     fig.suptitle(f"T4 -- what CDiT is handed and what it hands back  |  {model_name}, "
                  f"{n_total/1e6:.0f} M params, checkpoint {CKP}", fontsize=12)
     fig.subplots_adjust(left=0.05, right=0.97, top=0.9, bottom=0.06)
-    p2 = os.path.join(out_dir, "cdit_io.png")
-    fig.savefig(p2, dpi=120, bbox_inches="tight"); plt.close(fig)
+    p2 = save.figure("cdit_io", fig, dpi=120, bbox_inches="tight")
     print(f"  wrote {p2}")
 
     # --- individual panels for build_page.py ---
     for i in range(T):
-        plt.imsave(os.path.join(out_dir, f"ctx_f{i}.png"), ctx_v[i])
+        save.image(f"ctx_f{i}", ctx_v[i])
         fig, ax = plt.subplots(figsize=(2.4, 2.4)); ax.axis("off")
         overlay(ax, ctx_v[i], cross_map[i], IMG,
                 cross_map.min(), cross_map.max())
         fig.subplots_adjust(0, 0, 1, 1)
-        fig.savefig(os.path.join(out_dir, f"attn_f{i}.png"), dpi=110, bbox_inches="tight",
-                    pad_inches=0); plt.close(fig)
-    plt.imsave(os.path.join(out_dir, "target.png"), target)
+        save.figure(f"attn_f{i}", fig, dpi=110, bbox_inches="tight", pad_inches=0)
+    save.image("target", target)
     ctx_l = x_cond[0].float().cpu().numpy()          # (T, 4, 28, 28)
     for i in range(T):
         for ch in range(4):
-            plt.imsave(os.path.join(out_dir, f"ctx_f{i}_ch{ch}.png"), ctx_l[i, ch], cmap="viridis")
+            save.image(f"ctx_f{i}_ch{ch}", ctx_l[i, ch], cmap="viridis")
     for ch in range(4):
-        plt.imsave(os.path.join(out_dir, f"noise_ch{ch}.png"), xn[ch], cmap="magma")
-        plt.imsave(os.path.join(out_dir, f"eps_ch{ch}.png"), en[ch], cmap="magma")
+        save.image(f"noise_ch{ch}", xn[ch], cmap="magma")
+        save.image(f"eps_ch{ch}", en[ch], cmap="magma")
 
     # the late-loop latent, and what it looks like as a picture -- the clearest
     # single image of "the frame is being uncovered", decoded with T3's VAE
@@ -883,9 +910,9 @@ def main():
     with torch.no_grad():
         xl_px = torch.clip(vae.decode(x_late / SCALING).sample, -1, 1)
     xl_v = misc.unnormalize(xl_px[0].cpu()).clamp(0, 1).permute(1, 2, 0).numpy()
-    plt.imsave(os.path.join(out_dir, "xlate_decoded.png"), xl_v)
+    save.image("xlate_decoded", xl_v)
     for ch in range(4):
-        plt.imsave(os.path.join(out_dir, f"xlate_ch{ch}.png"), xl[ch], cmap="magma")
+        save.image(f"xlate_ch{ch}", xl[ch], cmap="magma")
 
     # ---- 8b. the three "make it visible" panels ----
     # Everything above renders measurements. These three render the THINGS, so
@@ -900,8 +927,7 @@ def main():
     ax.add_patch(plt.Rectangle((q_c * px, q_r * px), px, px, fill=False, ec="#00e5d0", lw=3))
     ax.set_xlim(0, IMG); ax.set_ylim(IMG, 0)
     fig.subplots_adjust(0, 0, 1, 1)
-    fig.savefig(os.path.join(out_dir, "tiles_on_frame.png"), dpi=130, bbox_inches="tight",
-                pad_inches=0); plt.close(fig)
+    save.figure("tiles_on_frame", fig, dpi=130, bbox_inches="tight", pad_inches=0)
 
     # (i-b) the SAME cut, on the thing it is actually cut from. The grid is drawn
     # on the photo above only because 14x14 squares are legible there; the tiles
@@ -915,8 +941,7 @@ def main():
                                model.patch_size, model.patch_size,
                                fill=False, ec="#00e5d0", lw=3))
     fig.subplots_adjust(0, 0, 1, 1)
-    fig.savefig(os.path.join(out_dir, "tiles_on_latent.png"), dpi=130, bbox_inches="tight",
-                pad_inches=0); plt.close(fig)
+    save.figure("tiles_on_latent", fig, dpi=130, bbox_inches="tight", pad_inches=0)
 
     # (ii) the loop, as a filmstrip. p_sample_loop's real x we cannot make without
     # running it (T5), but q_sample gives the TRUE latent carrying exactly the noise
@@ -930,7 +955,7 @@ def main():
             ps = torch.clip(vae.decode(xs / SCALING).sample, -1, 1)
             v = misc.unnormalize(ps[0].cpu()).clamp(0, 1).permute(1, 2, 0).numpy()
             strip.append((si, int(t_map[si]), v))
-            plt.imsave(os.path.join(out_dir, f"loop_s{si}.png"), v)
+            save.image(f"loop_s{si}", v)
 
     fig, axes = plt.subplots(1, len(strip), figsize=(2.05 * len(strip), 2.5))
     for ax, (si, tv, v) in zip(np.atleast_1d(axes), strip):
@@ -939,8 +964,7 @@ def main():
     fig.suptitle(f"How much noise is left at each point of the {RESPACED_STEPS}-step loop "
                  f"(the loop runs left to right)", fontsize=11)
     fig.tight_layout(rect=[0, 0, 1, 0.88])
-    fig.savefig(os.path.join(out_dir, "loop_filmstrip.png"), dpi=120, bbox_inches="tight")
-    plt.close(fig)
+    save.figure("loop_filmstrip", fig, dpi=120, bbox_inches="tight")
 
     # (iii) WHERE in the frame the action changes the answer. Not a percentage --
     # a map. Same x, same context, different action; look at |delta eps|.
@@ -971,8 +995,7 @@ def main():
                   extent=[0, IMG, IMG, 0], vmin=0, vmax=dmap.max())
         ax.set_xlim(0, IMG); ax.set_ylim(IMG, 0)
         fig.subplots_adjust(0, 0, 1, 1)
-        fig.savefig(os.path.join(out_dir, f"{nm}.png"), dpi=120, bbox_inches="tight",
-                    pad_inches=0); plt.close(fig)
+        save.figure(nm, fig, dpi=120, bbox_inches="tight", pad_inches=0)
     print(f"  wrote tiles_on_frame.png, tiles_on_latent.png, loop_filmstrip.png + loop_s*.png, "
           f"actiondelta_zero.png, actiondelta_mirror.png")
 
@@ -981,15 +1004,14 @@ def main():
         ax.plot(gates[k], label=k, color=col, lw=1.6)
     ax.set_xlabel("block"); ax.set_ylabel("mean |gate|"); ax.tick_params(labelsize=8)
     ax.legend(fontsize=7, frameon=False); ax.spines[["top", "right"]].set_visible(False)
-    fig.tight_layout(); fig.savefig(os.path.join(out_dir, "gates.png"), dpi=130); plt.close(fig)
+    fig.tight_layout(); save.figure("gates", fig, dpi=130)
 
     fig, ax = plt.subplots(figsize=(3.0, 2.6)); ax.axis("off")
     ax.imshow(slot_sim, cmap="RdBu_r", vmin=-1, vmax=1)
     for i in range(T + 1):
         for j in range(T + 1):
             ax.text(j, i, f"{slot_sim[i,j]:.2f}", ha="center", va="center", fontsize=7)
-    fig.tight_layout(); fig.savefig(os.path.join(out_dir, "posembed.png"), dpi=130,
-                                    bbox_inches="tight"); plt.close(fig)
+    fig.tight_layout(); save.figure("posembed", fig, dpi=130, bbox_inches="tight")
 
     fig, ax = plt.subplots(figsize=(3.4, 2.2))
     ax.plot([d["top10"] * 100 for d in depth_late], color="#0f8f8b", lw=1.6, label="near the end")
@@ -997,7 +1019,7 @@ def main():
     ax.axhline(uniform_top10 * 100, color="#5c6a76", ls=":", lw=1.1, label="even")
     ax.set_xlabel("block"); ax.set_ylabel("focus, % of attention"); ax.tick_params(labelsize=8)
     ax.legend(fontsize=7, frameon=False); ax.spines[["top", "right"]].set_visible(False)
-    fig.tight_layout(); fig.savefig(os.path.join(out_dir, "focus.png"), dpi=130); plt.close(fig)
+    fig.tight_layout(); save.figure("focus", fig, dpi=130)
 
     fig, ax = plt.subplots(figsize=(3.4, 2.2))
     ax.plot([s["t"] for s in sweep], [s["action_pct_of_guess"] for s in sweep],
@@ -1005,14 +1027,13 @@ def main():
     ax.invert_xaxis()
     ax.set_xlabel(f"diffusion step t  ({t_map[-1]} → {t_map[0]})"); ax.set_ylabel("% change, action zeroed")
     ax.tick_params(labelsize=8); ax.spines[["top", "right"]].set_visible(False)
-    fig.tight_layout(); fig.savefig(os.path.join(out_dir, "tsweep.png"), dpi=130); plt.close(fig)
+    fig.tight_layout(); save.figure("tsweep", fig, dpi=130)
 
     fig, ax = plt.subplots(figsize=(2.4, 2.4)); ax.axis("off")
     ax.imshow(self_map, cmap="viridis")
     ax.add_patch(plt.Rectangle((q_c - .5, q_r - .5), 1, 1, fill=False, ec="#00e5d0", lw=2))
     fig.subplots_adjust(0, 0, 1, 1)
-    fig.savefig(os.path.join(out_dir, "selfattn.png"), dpi=110, bbox_inches="tight",
-                pad_inches=0); plt.close(fig)
+    save.figure("selfattn", fig, dpi=110, bbox_inches="tight", pad_inches=0)
     print(f"  wrote ctx_f*.png, attn_f*.png, target.png, noise_ch*.png, eps_ch*.png, "
           f"xlate_ch*.png, xlate_decoded.png, gates.png, focus.png, tsweep.png, "
           f"posembed.png, selfattn.png")
@@ -1120,7 +1141,8 @@ def main():
     }
     # Written through debug/common/facts.py, never json.dump directly: that is
     # what stamps the schema version the page checks on load (ADR-0004).
-    written = facts_io.write(out_dir, "cdit_facts.json", facts, stage="t4")
+    written = facts_io.write(out_dir, "cdit_facts.json", facts, stage="t4",
+                             images=save.names)
     print(f"  wrote {written}")
     print("\nDONE.")
 

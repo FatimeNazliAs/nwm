@@ -121,7 +121,11 @@ def build(scene, audit=False):
     lat = f["latent_size"]
     film = f["filmstrip"]
 
-    img = {n: data_uri(os.path.join(d, f"{n}.png")) for n in image_names(f)}
+    needed = image_names(f)
+    # The other half of the probe/page contract: every picture shown here must be
+    # one the probe recorded writing, and must actually be on disk.
+    facts_io.require_images(f, needed)
+    img = {n: data_uri(os.path.join(d, f"{n}.png")) for n in needed}
 
     def tag(t):
         return "now" if t == T - 1 else f"t&minus;{T - 1 - t}"

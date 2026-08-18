@@ -63,6 +63,16 @@ def test_page_builds_from_fixture():
             "the fixed publish path was not written"
 
 
+def test_page_needs_only_pictures_the_probe_writes():
+    """The picture half of the probe/page contract, checked without a GPU."""
+    f = json.load(open(FIXTURE))
+    manifest = f.get("_images")
+    assert manifest, "the fixture predates image manifests -- re-run debug/t4/probe.py"
+    unwritten = [n for n in build_page.image_names(f) if n not in manifest]
+    assert not unwritten, \
+        f"the page asks for pictures the probe never writes: {unwritten}"
+
+
 def test_missing_required_fact_is_a_clear_error():
     """A page meeting an older probe's output must say which key is missing."""
     with tempfile.TemporaryDirectory() as tmp:
