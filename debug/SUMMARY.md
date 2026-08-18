@@ -30,7 +30,7 @@ The pipeline being followed:
 | --- | --- |
 | Repo | `/home/nazli/projects/nwm` — https://github.com/FatimeNazliAs/nwm |
 | Branch | `debug/nwm-walkthrough` (off `integration`, which is the main branch) |
-| Latest commit | `637fcdd` — *feat(debug): add the T6 inference-and-metrics walkthrough* |
+| Last code commit | `637fcdd` — *feat(debug): add the T6 inference-and-metrics walkthrough* |
 | Container | `nwm_debug` — persistent and running. Repo at `/app`, data at `/data`. **Do not rebuild.** |
 | Checkpoint | `0100000.pth.tar` (4 GB, CDiT-XL/2, 1012 M params) at `/data/logs/nwm_cdit_xl/checkpoints/` |
 | Plan file | `~/.claude/plans/nwm-debug-walkthrough.md` — the T1–T6 plan and every convention |
@@ -45,7 +45,9 @@ NWM root, and it holds *General Plan - T1…T6* plus the six stage pages T1–T6
 its own ID, so the per-stage links below are unaffected by the move.
 
 Thirteen commits on the branch, `13b994b` (T1) through `637fcdd` (T6). All six stages are
-committed. Nothing is pushed yet — `origin/debug/nwm-walkthrough` still points at `7b48f75`.
+committed and pushed to `origin/debug/nwm-walkthrough`, which is a **public** fork of
+`facebookresearch/nwm` — so the Notion and artifact links below are visible to anyone who finds the
+repo. The pages themselves stay private; only the URLs are public.
 
 ---
 
@@ -245,39 +247,36 @@ because the file is on the server and the browser is on the laptop.
 
 ## Open items
 
-1. **Nothing is pushed.** All thirteen commits are local. `git push` when ready.
-2. **`debug/t2/config.yaml` is modified and uncommitted** — the user pointed T2 at a different scene
-   while experimenting. Deliberately left out of every commit so far.
-3. **`whole()` is duplicated three times.** The same six-line integer-knob reader sits
+1. **`whole()` is duplicated three times.** The same six-line integer-knob reader sits
    byte-identical in `debug/t4/probe.py`, `debug/t5/probe.py` and `debug/t6/probe.py`. Three users
    is well past the "two users make a real seam" line ADR-0005 closes on, so it wants promoting to
    a `debug/common/config.py` alongside the `folder()` check and the shared error phrasing. Not
    done, because it is all-or-nothing: promoting it for T6 alone would leave four copies rather
    than three, and fixing all three touches two committed stages, one of which (T4) is published.
    Needs a decision before anyone starts.
-4. **The `sweep` record's shape is defined in three places** in `debug/t6/probe.py` — built in
+2. **The `sweep` record's shape is defined in three places** in `debug/t6/probe.py` — built in
    section 2, given its scores in section 4, and stripped of its path keys when the facts are
    written. The ordering is deliberate (the metric networks load after prediction on purpose), so
    this is a readability cost rather than a bug. Low value, listed so it is not rediscovered.
-5. **T2 and T3 predate the shared machinery.** Both still use raw `json.dump`/`json.load` instead of
+3. **T2 and T3 predate the shared machinery.** Both still use raw `json.dump`/`json.load` instead of
    `debug/common/facts.py`, and neither has a committed fixture or a page test. They work; they are
    just the last two stages not on the current architecture.
-6. **T4's page still says "step" where T5 and T6 say "pass"** — a known, accepted inconsistency.
+4. **T4's page still says "step" where T5 and T6 say "pass"** — a known, accepted inconsistency.
    Sweeping it needs permission, because T4's page is already published to advisors.
-7. **The paper is not cited anywhere.** The convention says to anchor "How it works" to the paper's
+5. **The paper is not cited anywhere.** The convention says to anchor "How it works" to the paper's
    own figure. T5 and T6 both skipped it: the PDF is not in the repo and the arXiv HTML invents
    figure labels. To do it properly, fetch the **PDF** (arXiv 2412.03572) and read it with
    `Read(pages=…)`. Never cite a section or equation number you have not read.
-8. **T5's Notion page may contain a wrong claim.** Its "How it works" says the action-removed run
+6. **T5's Notion page may contain a wrong claim.** Its "How it works" says the action-removed run
    "produces something close to the starting view: building still large, still near the middle."
    T6 measured this on the real inference path and it does **not** hold — all three comparison
    predictions sit further from the starting view (DreamSim 0.156–0.182) than the true frame does
    (0.118). T5's probe runs fp32 and T6 runs the real bf16 path, so this may be arithmetic or may be
    a claim that was eyeballed and never true. **Not yet investigated.** T6 makes no such claim.
-9. **32 of T6's 56 facts are read by no code** (`python debug/t6/build_page.py --audit`). Not dead —
+7. **32 of T6's 56 facts are read by no code** (`python debug/t6/build_page.py --audit`). Not dead —
    several are quoted by hand when writing Notion, and `truth_from_start` exists purely as a guard
    against item 6 creeping back in. Do not "clean them up" without asking.
-10. **Remaining optional work:** Appendix A (training, read-only) and Appendix B (planning,
+8. **Remaining optional work:** Appendix A (training, read-only) and Appendix B (planning,
    read-only). Both are out of the main sequence and neither is started.
 
 ---
