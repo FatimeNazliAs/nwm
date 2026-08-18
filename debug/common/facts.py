@@ -13,10 +13,15 @@ What it buys over `json.load`:
     tells the reader to re-run the probe;
   * read tracking, so `unused()` can report facts nobody consumes -- the probe
     measures far more than any one page shows, and without this the surplus is
-    invisible.
+    invisible;
+  * the manifest of PNGs the probe wrote, so the OTHER half of the probe->page
+    contract is checkable too. A page declares the pictures it needs and
+    `require_images` says which are missing, instead of the page discovering it
+    at render time in a real run. See debug/common/images.py.
 
     from debug.common import facts
     f = facts.load("debug/out/t4/<scene>/cdit_facts.json", required=("model",))
+    facts.require_images(f, ("ctx_f0", "target"))
     ...
     print(facts.unused(f))
 """
@@ -30,6 +35,9 @@ SCHEMA_VERSION = 1
 # else and can refuse a file it is too new or too old to understand.
 _VERSION_KEY = "_schema_version"
 _STAGE_KEY = "_stage"
+# The pictures the probe wrote. Stamped rather than measured: it describes the
+# interface, not the scene, which is why it is not an ordinary fact.
+_IMAGES_KEY = "_images"
 
 
 class FactsError(RuntimeError):
@@ -74,10 +82,28 @@ class Facts(Mapping):
         """The keys someone actually asked for, in this process."""
         return set(self._read)
 
+    @property
+    def images(self):
+        """The PNGs the probe recorded writing, or None if it wrote no manifest.
 
-def write(out_dir, filename, data, stage):
-    """Write a facts file, stamping the schema version and the stage that made it."""
+        None and empty mean different things. None is a file from a probe that
+        predates manifests; empty would be a probe that wrote no pictures at all.
+        """
+        got = self._data.get(_IMAGES_KEY)
+        return None if got is None else tuple(got)
+
+
+def write(out_dir, filename, data, stage, images=()):
+    """Write a facts file, stamping the schema version, the stage, and the pictures.
+
+    `images` is the manifest from a debug.common.images.Saver -- pass
+    `save.names`, never a hand-written list, so it cannot disagree with what was
+    actually written. Omitting it writes no manifest at all, which is what every
+    facts file written before manifests existed looks like.
+    """
     stamped = {_VERSION_KEY: SCHEMA_VERSION, _STAGE_KEY: stage}
+    if images:
+        stamped[_IMAGES_KEY] = list(images)
     stamped.update(data)
     path = os.path.join(out_dir, filename)
     with open(path, "w") as fh:
@@ -121,6 +147,42 @@ def load(path, required=()):
     return Facts(data, path)
 
 
+def require_images(f, needed):
+    """Check the pictures a page needs against what the probe wrote.
+
+    Two failures are worth telling apart, because the fix differs:
+
+      * the probe never wrote it -- the page is asking for a picture the probe
+        does not make, so the probe needs a change;
+      * the probe wrote it but it is not on disk -- the scene folder is stale or
+        half-copied, so re-running the probe is enough.
+
+    A facts file with no manifest predates this check. It is not an error: the
+    files are still checked for existence, and a note says why the stronger
+    check did not run.
+    """
+    where = os.path.dirname(f.path)
+    manifest = f.images
+    if manifest is None:
+        print(f"  note: {f.path} predates image manifests; checking the files exist only")
+    else:
+        unwritten = [n for n in needed if n not in manifest]
+        if unwritten:
+            raise FactsError(
+                f"{f.path} says the probe never wrote: {', '.join(sorted(unwritten))}.\n"
+                f"  The page is asking for {len(unwritten)} picture(s) this stage's probe.py "
+                f"does not save. Either the page wants the wrong name, or the probe needs to "
+                f"save it."
+            )
+    missing = [n for n in needed if not os.path.exists(os.path.join(where, f"{n}.png"))]
+    if missing:
+        raise FactsError(
+            f"missing picture(s) in {where}: "
+            f"{', '.join(sorted(n + '.png' for n in missing))}.\n"
+            f"  The facts file is there but the pictures are not. Re-run the stage's probe.py."
+        )
+
+
 def unused(f):
     """Facts present in the file that nothing read. Sorted, internals excluded.
 
@@ -130,4 +192,4 @@ def unused(f):
     """
     if not isinstance(f, Facts):
         raise TypeError("unused() needs a Facts from load()")
-    return sorted(set(f) - f.read_keys() - {_VERSION_KEY, _STAGE_KEY})
+    return sorted(set(f) - f.read_keys() - {_VERSION_KEY, _STAGE_KEY, _IMAGES_KEY})

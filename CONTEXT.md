@@ -33,7 +33,10 @@ re-implements upstream behaviour; it imports it.
 
 **Facts** (`<scene>/cdit_facts.json` and friends) — the measured record a probe
 writes. **Facts are the interface between a probe and everything downstream.**
-See [ADR-0001](docs/adr/0001-probe-page-split.md).
+See [ADR-0001](docs/adr/0001-probe-page-split.md). The file also carries the
+**manifest** of pictures the probe wrote, so the PNGs are part of that checked
+interface rather than travelling beside it — `debug/common/images.py` builds the
+manifest as a side effect of saving, and `facts.require_images` checks it.
 
 **Page** (`debug/t<N>/build_page.py` → `debug/out/t<N>/latest.html`) — the
 published story of the stage, told with real images. It reads facts and PNGs and
@@ -61,6 +64,17 @@ produce. During denoising it exists only as a **noisy latent**.
 **Token / square** — one 2×2 tile of a latent, expanded to 1152 numbers. A frame
 is 196 tokens. The pages say "square" where the code says "token".
 
+**Pass / step** — one turn of the diffusion loop: call the model once, nudge the
+latent towards the answer, put fresh noise back. A prediction is 250 passes. The
+pages say "pass" where the code and `config.yaml` say "step", for the same reason
+as square/token — and because `t` (0–999, the noise level) is a *different*
+number that upstream also calls a timestep. Step numbers run 249 down to 0.
+
+**Run** — one complete execution of the loop: the 250 passes and the finished
+latent. `debug/t5/probe.py` performs three per scene — the real one, one with the
+action removed, and one from different starting noise — so that "what did the
+action decide?" is answered by comparing runs rather than by argument.
+
 ## Scene tooling — two similarly named things
 
 - `debug/common/scene.py` — **resolves** the scene a config names.
@@ -80,7 +94,10 @@ is 196 tokens. The pages say "square" where the code says "token".
 ## Running the tests
 
 ```bash
-python debug/tests/test_t4_page.py
+./debug/tests/run_all.sh
 ```
 
-No GPU and no checkpoint — the page is built from a recorded facts file.
+No GPU, no checkpoint and no dataset: every test runs against a committed facts
+file from a real probe run. The suite covers the pages (built from fixtures with
+stub PNGs), the `Run`/`Pass` contract (driven by a fake diffusion), and each
+stage's `config.yaml` reader.

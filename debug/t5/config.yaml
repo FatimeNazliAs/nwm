@@ -1,0 +1,94 @@
+# T5 — which prediction to watch being generated.
+#
+#  WHAT TO CHANGE — the three lines in section 1, and nothing else.
+#
+#     trajectory   which drive to watch
+#     time         the frame that counts as "now"
+#     sec          how far ahead to predict, in seconds
+#
+#  HOW TO CHANGE — edit those three lines, save, then run:
+#
+#     ./debug/t5/update.sh
+#
+#  and refresh your browser tab.
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  1. THE SCENE  —  these are the three lines you edit
+# ══════════════════════════════════════════════════════════════════════
+
+trajectory: jackal_2019-12-21-13-21-20_1_r00
+time: 171
+sec: 16
+
+# ══════════════════════════════════════════════════════════════════════
+#  2. READY-MADE SCENES  —  copy any block over the three lines above
+# ══════════════════════════════════════════════════════════════════════
+#
+#  Measured over a 16 s horizon by `python debug/t4/find_scenes.py`.
+#  "drove" and "turned" are what the robot actually does between `time`
+#  and the frame you are asking for. `sec` can be 1, 2, 4, 8 or 16.
+#
+#  ── best all-rounder ── drives 18.5 m, turns 177°, scene changes the most
+#     trajectory: jackal_2019-08-18-15-04-02_5_r00
+#     time: 11
+#     sec: 16
+#
+#  ── a complete about-turn ── 19.4 m, 180°
+#     trajectory: jackal_2020-01-05-15-15-34_1_r00
+#     time: 59
+#     sec: 16
+#
+#  ── the straightest ── 19.6 m but only 33°. Pair with the one above:
+#     same distance, almost no turning.
+#     trajectory: jackal_2019-12-21-13-21-20_1_r00
+#     time: 171
+#     sec: 16
+#
+#  ── the calmest on offer ── 9.4 m, 9°. Nothing here is truly still; the
+#     eval index only keeps scenes with real motion.
+#     trajectory: jackal_2019-08-02-17-18-37_42_r00
+#     time: 43
+#     sec: 16
+#
+#  ── long drive, big visual change ── 19.7 m, 100°
+#     trajectory: jackal_2020-01-05-14-36-38_1_r00
+#     time: 115
+#     sec: 16
+#
+#  ── the original short-horizon example ── one second ahead
+#     trajectory: jackal_2019-08-02-16-28-30_5_r01
+#     time: 6
+#     sec: 1
+#
+#  ── your own ──
+#     Names come from data_splits/recon/test/traj_names.txt.
+#     Two rules, both checked for you with a message if you break them:
+#       time >= 3            (needs 4 context frames ending at `time`)
+#       time + 64 <= last    (the dataset always builds the full 16 s)
+#     The second does not depend on `sec`, so a scene that works at
+#     sec: 1 also works at sec: 16.
+#
+#     Run `python debug/t4/find_scenes.py` to search for more.
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  3. EVERYTHING ELSE  —  fine to ignore
+# ══════════════════════════════════════════════════════════════════════
+
+# Alternative way to pick a scene: a row number into the 500-row eval index
+# data_splits/recon/test/time.pkl. Only used when `trajectory` above is blank.
+sample: 0
+
+# Which one of the 250 steps to open up and show the arithmetic of.
+# 249 is the loop's first step, 0 is its last.
+step: 125
+
+# Which points of the loop the filmstrips show. Same rule: 249 first, 0 last.
+filmstrip_steps: [249, 200, 150, 100, 60, 30, 10, 0]
+
+# Fixes the starting noise, so repeated runs give identical pictures.
+seed: 0
+
+# The starting noise for the "same action, different noise" comparison run.
+compare_seed: 7
